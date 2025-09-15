@@ -139,6 +139,23 @@ export class Contexto {
     // =========================================================================
     //                 Funções para escrever na resposta  
     // =========================================================================
+    static async _descricaoItens(ctx: Contexto, itens: Item[]) {
+        const descricaoItens = [];
+        for(let item of itens) {
+            const itemConfig = getItemConfig(item.tipo);
+            const descr = await itemConfig.descricao(ctx);
+            if(descr) {
+                ctx.escrevaln(descr);
+            }
+            descricaoItens.push({
+                id: item.id,
+                tipo: item.tipo,
+                quantidade: item.quantidade,
+                descricao: ctx.obterTexto(),
+            });
+        }
+    }
+
     async descricaoSala() {
         let salaConfig = getSalaConfig(this.jogador.salaId);
 
@@ -148,20 +165,7 @@ export class Contexto {
         }
         const descricaoSala = this.obterTexto();
 
-        const descricaoItens = [];
-        for(let item of await this.getItensNoChao()) {
-            const itemConfig = getItemConfig(item.tipo);
-            const descr = await itemConfig.descricao(this);
-            if(descr) {
-                this.escrevaln(descr);
-            }
-            descricaoItens.push({
-                id: item.id,
-                tipo: item.tipo,
-                quantidade: item.quantidade,
-                descricao: this.obterTexto(),
-            });
-        }
+        const descricaoItens = await Contexto._descricaoItens(this, await this.getItensNoChao());
         const conexoes = Object.keys(salaConfig.conexoes);
         
         return {
