@@ -1,18 +1,37 @@
 import "dotenv/config";
 import { randomUUID } from "crypto";
 import { db } from "./drizzle.ts";
-import { tableSalas } from "./salaSchema.ts";
+import { Sala, tableSalas } from "./salaSchema.ts";
 import { tableUsers } from "./userSchema.ts";
 import { tableEntidades } from "./entidadeSchema.ts";
-import { tableItens } from "./itemSchema.ts";
+import { Item, tableItens } from "./itemSchema.ts";
 import { salas } from "../jogo/salas/salas.ts";
 
 // Assume que acabou de dar drizzle kit push, então as tabelas estão criadas mas vazias
 try {
-    await db.insert(tableSalas).values(Object.entries(salas).map(([salaId, sala]) => ({
-        id: salaId,
-        estado: sala.estadoInicial || {}
-    })));
+    const insertSalas: typeof tableSalas.$inferInsert[] = [];
+    const insertItens: typeof tableItens.$inferInsert[] = [];
+    for(let [salaId, sala] of Object.entries(salas)) {
+        insertSalas.push({
+            id: salaId,
+            estado: sala.estadoInicial || {}
+        });
+
+        if(sala.itensIniciais) {
+            for(let item of sala.itensIniciais) {
+                insertItens.push({
+                    id: randomUUID(),
+                    tipo: item.tipo,
+                    quantidade: item.quantidade,
+                    salaId: salaId,
+                    estado: item.estadoInicial || {}
+                });
+            }
+        }
+    }
+
+    await db.insert(tableSalas).values(insertSalas);
+    await db.insert(tableItens).values(insertItens);
 
     const [jogador] = await db.insert(tableUsers).values([
         { id: randomUUID(), username: "jogador", createdAt: new Date() },
@@ -29,16 +48,6 @@ try {
         },
     ]).returning();
     
-    const [pedra] = await db.insert(tableItens).values([
-        {
-            id: randomUUID(),
-            tipo: "pedra",
-            quantidade: 1,
-            salaId: "Inicio",
-            estado: {}
-        },
-    ]).returning();
-
     console.log("Seed inicial criado!");
 
 } catch (error) {

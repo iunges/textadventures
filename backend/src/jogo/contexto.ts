@@ -9,11 +9,20 @@ import { ItemRepository } from "../repositories/itemRepository.ts";
 import { SalaRepository } from "../repositories/salaRepository.ts";
 import { getSalaConfig } from "./salas/salas.ts";
 
+export type ItemType = {
+    descricao: (ctx: Contexto) => undefined | string | Promise<string | undefined>;
+};
+
 export type SalaType = {
     descricao: (ctx: Contexto) => undefined | string | Promise<string | undefined>;
     conexoes: { 
         [direcao: string]: (ctx: Contexto) => undefined | string | Promise<string | undefined>;
     };
+    itensIniciais?: {
+        tipo: string;
+        quantidade: number;
+        estadoInicial?: Estado;
+    }[];
     estadoInicial?: Estado;
 };
 
@@ -68,6 +77,11 @@ export class Contexto {
         this.sala = sala;
         this.str = "";
         this.itensNoChao = itensNoChao;
+    }
+
+    static async carregar(usuarioId: string): Promise<Contexto> {
+        const result = await SalaRepository.dadosIniciaisJogador(db, usuarioId);
+        return new Contexto(result);
     }
     // =========================================================================
     //                 Funções que alteram o estado do jogo  

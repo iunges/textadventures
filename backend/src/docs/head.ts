@@ -5,7 +5,8 @@ import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
 } from '@asteasolutions/zod-to-openapi';
-import { linhaDocs } from './linhaDocs.ts';
+import { itemDocs } from './itemDocs.ts';
+import { salaDocs } from './salaDocs.ts';
 
 // https://stackoverflow.com/questions/72133185/deploy-an-express-server-that-uses-express-static-to-serve-a-build-folder-to-ver
 
@@ -14,7 +15,8 @@ import { linhaDocs } from './linhaDocs.ts';
 // https://github.com/scottie1984/swagger-ui-express/issues/114#issuecomment-2160925816
 
 export const apiDocPaths = {
-    ...linhaDocs,
+    ...salaDocs,
+    ...itemDocs,
 };
 
 const generateOpenAPIDocs = (registry: OpenAPIRegistry) => {

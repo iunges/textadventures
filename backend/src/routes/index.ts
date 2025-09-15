@@ -1,7 +1,8 @@
 import { RequestHandler, Express, ErrorRequestHandler } from "express";
 import { getDocsRouter } from "./docsRoute.ts";
-import { getLinhaRouter } from "./linhaRoute.ts";
 import { logMiddleware } from "./logMiddleware.ts";
+import { getItemRouter } from "./itemRoute.ts";
+import { getSalaRouter } from "./salaRoute.ts";
 
 const routes = (app: Express) => {
 	// Só fazer log das rotas se estiver em desenvolvimento, desativar em produção
@@ -10,7 +11,8 @@ const routes = (app: Express) => {
 	}
 
     app.use(
-        getLinhaRouter(),
+        getItemRouter(),
+        getSalaRouter(),
         getDocsRouter(),
     );
 

@@ -7,7 +7,11 @@ export const salasInicio = {
         `,
         conexoes: {
             "L": () => "Caverna"
-        }
+        },
+        itensIniciais: [{
+            tipo: "Pedra",
+            quantidade: 1
+        }]
     },
     Caverna: {
         descricao: () => `Você está em uma caverna escura,
@@ -37,7 +41,11 @@ export const salasInicio = {
         descricao: () => "Este é um poço no fundo da caverna, acima há uma escada de cordas",
         conexoes: {
             "N": () => "Caverna"
-        }
+        },
+        itensIniciais: [{
+            tipo: "Pedra",
+            quantidade: 1
+        }]
     },
     Tesouro: {
         descricao: () => "Você está em uma sala de pedra decorada com um baú fechado no centro",

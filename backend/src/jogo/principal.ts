@@ -4,11 +4,13 @@ import { SalaRepository } from "../repositories/salaRepository.ts";
 import { EntidadeRepository } from "../repositories/entidadeRepository.ts";
 import { db } from "../db/drizzle.ts";
 
+// MOVER ESSA LÓGICA PARA O FRONTEND
+
 /**
  * Como só tem 1 rota, é necessário obter a situação atual do usuário parar aplicar o comando
  * Ou seja, todo comando que o usuário faz vai passar por aqui.
  */
-export const onLinha = async (texto: string, usuario: {id: string}): Promise<string> => {
+const onLinha = async (texto: string, usuario: {id: string}): Promise<string> => {
     // 1. Obter a situação atual do usuário e do jogo:
     // - Obter usuário: Em qual sala está? Pode realizar ações? Que itens possui?
     // - Obter sala: Qual a situação da sala nesse momento? Quais itens estão no chão? Quais entidades estão presentes?
@@ -16,7 +18,7 @@ export const onLinha = async (texto: string, usuario: {id: string}): Promise<str
     // - Obter itens: Qual a situação deles?
     const result = await SalaRepository.dadosIniciaisJogador(db, usuario.id);
     const ctx: Contexto = new Contexto({
-        jogador: result.entidade,
+        jogador: result.jogador,
         sala: result.sala,
         global: result.global,
         itensNoChao: result.itensNoChao

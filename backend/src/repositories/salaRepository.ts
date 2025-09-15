@@ -39,7 +39,9 @@ export class SalaRepository {
             throw new Error("Entidade em sala que não existe!");
         }
 
-        return { entidade, sala, 
+        return { 
+            jogador: entidade, 
+            sala: sala, 
             global: global!, 
             itensNoChao: itensNoChao || []
         };
