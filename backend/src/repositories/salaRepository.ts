@@ -1,37 +1,38 @@
-import { eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { type Sala, tableSalas } from "../db/salaSchema.ts";
 import { alias } from "drizzle-orm/pg-core";
 import { type Entidade, tableEntidades } from "../db/entidadeSchema.ts";
 import { type Estado } from "../db/estadoSchema.ts";
 import { type Item, tableItens } from "../db/itemSchema.ts";
 import { type DatabaseType } from "../db/drizzle.ts";
+import { RevokeSessionError } from "../middlewares/authMiddleware.ts";
 
 export class SalaRepository {
     static async dadosIniciaisJogador(db: DatabaseType, username: string) {
         const itensSubquery = db.select({
-            salaId: tableItens.salaId,
-            sala_itens: sql<Item[]>`COALESCE(json_agg(${tableItens}.*), '{}')`.as("sala_itens"),
+            salaId: tableItens.localId,
+            sala_itens: sql<Item[]>`COALESCE(json_agg(${tableItens}.*), '[]'::json)`.as("sala_itens"),
             })
             .from(tableItens)
-            .where(isNotNull(tableItens.salaId))
-            .groupBy(tableItens.salaId)
+            .where(and(eq(tableItens.localTipo, "SALA"), gte(tableItens.quantidade, 1)))
+            .groupBy(tableItens.localId)
             .as("itens_sub");
 
         const mochilaSubquery = db.select({
-            entidadeId: tableItens.entidadeId,
-            mochila_itens: sql<Item[]>`COALESCE(json_agg(${tableItens}.*), '{}')`.as("mochila_itens"),
+            entidadeId: tableItens.localId,
+            mochila_itens: sql<Item[]>`COALESCE(json_agg(${tableItens}.*), '[]'::json)`.as("mochila_itens"),
             })
             .from(tableItens)
-            .where(isNotNull(tableItens.entidadeId))
-            .groupBy(tableItens.entidadeId)
+            .where(and(eq(tableItens.localTipo, "ENTIDADE"), gte(tableItens.quantidade, 1)))
+            .groupBy(tableItens.localId)
             .as("mochila_sub");
 
         const entidadeSubquery = db.select({
             entidadeSalaId: tableEntidades.salaId,
-            entidades: sql<Entidade[]>`COALESCE(json_agg(${tableEntidades}.*), '{}')`.as("entidades"),
+            entidades: sql<Entidade[]>`COALESCE(json_agg(${tableEntidades}.*), '[]'::json)`.as("entidades"),
             })
             .from(tableEntidades)
-            .groupBy(tableEntidades.id)
+            .groupBy(tableEntidades.salaId)
             .as("entidade_sub");
 
         const aliasSalaGlobal = alias(tableSalas, "global");
@@ -45,7 +46,7 @@ export class SalaRepository {
             })
             .from(tableEntidades)
             .leftJoin(tableSalas, eq(tableEntidades.salaId, tableSalas.id))
-            .leftJoin(aliasSalaGlobal, eq(aliasSalaGlobal.id, "Global"))
+            .leftJoin(aliasSalaGlobal, eq(aliasSalaGlobal.nome, "Global"))
             .leftJoin(itensSubquery, eq(itensSubquery.salaId, tableSalas.id))
             .leftJoin(mochilaSubquery, eq(mochilaSubquery.entidadeId, tableEntidades.id))
             .leftJoin(entidadeSubquery, eq(entidadeSubquery.entidadeSalaId, tableSalas.id))
@@ -53,12 +54,12 @@ export class SalaRepository {
             .limit(1);
     
         if(!result || result.length === 0 || !result[0]) {
-            throw new Error("Usuário não existe!");
+            throw new RevokeSessionError("Usuário não existe!");
         }
     
         const { entidade, sala, global, itensNoChao, mochila, entidadesNaSala } = result[0];
         if(!entidade || !sala) {
-            throw new Error("Entidade em sala que não existe!");
+            throw new RevokeSessionError("Entidade em sala que não existe!");
         }
 
         return { 
@@ -75,6 +76,15 @@ export class SalaRepository {
         const result = await db.select()
         .from(tableSalas)
         .where(eq(tableSalas.id, salaId))
+        .limit(1);
+
+        return result && result.length > 0 ? result[0] : null;
+    }
+
+    static async getSalaByNome(db: DatabaseType, sala: string): Promise<Sala | null> {
+        const result = await db.select()
+        .from(tableSalas)
+        .where(eq(tableSalas.nome, sala))
         .limit(1);
 
         return result && result.length > 0 ? result[0] : null;

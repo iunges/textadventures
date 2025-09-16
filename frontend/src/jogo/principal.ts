@@ -87,7 +87,8 @@ const fazerLogin = async () => {
 export const principal = async () => {
     let jogador: { username: string; salaId: string, mochila?: Omit<RespostaItens, "descricao">[] | null  } | null = null;
     let sala: { 
-        id: string; 
+        id: string;
+        nome: string;
         itens?: Omit<RespostaItens, "descricao">[] | null; 
         entidades?: Omit<RespostaEntidades, "descricao">[] | null;
     } | null = null;
@@ -116,25 +117,35 @@ export const principal = async () => {
                 termPrint("Até mais!");
                 break;
             } else if (acao === "PEGAR") {
+                let quantidade = 1;
+                if(args[0].match(/^\d+$/)) {
+                    quantidade = parseInt(args[0]);
+                    args.shift();
+                }
                 const itemId = sala.itens?.find(i => i.tipo.toUpperCase() === args[0])?.id;
                 if(!itemId) {
                     termPrint("Não tem isso aqui.");
                     continue;
                 }
 
-                const { resposta, sala: _sala, jogador: _jogador } = await fetchClient.itemPegar(itemId);
+                const { resposta, sala: _sala, jogador: _jogador } = await fetchClient.itemPegar(itemId, quantidade);
                 jogador = {...jogador, ..._jogador};
                 sala = {...sala, ..._sala};
 
                 termPrint(resposta);
             } else if(acao === "LARGAR") {
+                let quantidade = 1;
+                if(args[0].match(/^\d+$/)) {
+                    quantidade = parseInt(args[0]);
+                    args.shift();
+                }
                 const itemId = jogador.mochila?.find(i => i.tipo.toUpperCase() === args[0])?.id;
                 if(!itemId) {
                     termPrint("Não tem isso aqui.");
                     continue;
                 }
 
-                const { resposta, sala: _sala, jogador: _jogador } = await fetchClient.itemLargar(itemId);
+                const { resposta, sala: _sala, jogador: _jogador } = await fetchClient.itemLargar(itemId, quantidade);
                 jogador = {...jogador, ..._jogador};
                 sala = {...sala, ..._sala};
 

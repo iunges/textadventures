@@ -11,13 +11,18 @@ import { getItemConfig } from "./itens/itens.ts";
 import { getSalaConfig } from "./salas/salas.ts";
 
 export type ItemType = {
-    descricao: (ctx: Contexto) => undefined | string | Promise<string | undefined>;
+    descricao: (ctx: Contexto) => void | string | Promise<string | void>;
+    itensIniciais?: {
+        tipo: string;
+        quantidade: number;
+        estadoInicial?: Estado;
+    }[];
 };
 
 export type SalaType = {
-    descricao: (ctx: Contexto) => undefined | string | Promise<string | undefined>;
+    descricao: (ctx: Contexto) => void | string | Promise<string | void>;
     conexoes: { 
-        [direcao: string]: (ctx: Contexto) => undefined | string | Promise<string | undefined>;
+        [direcao: string]: (ctx: Contexto) => void | string | Promise<string | void>;
     };
     itensIniciais?: {
         tipo: string;
@@ -112,6 +117,7 @@ export class Contexto {
             },
             sala: this.sala ? {
                 id: this.sala.id,
+                nome: this.sala.nome,
                 atualizadoEm: this.sala.atualizadoEm,
                 itens: this.itensNoChao ? this.itensNoChao.map(i => ({
                     id: i.id,
@@ -133,22 +139,42 @@ export class Contexto {
     // =========================================================================
     //                 Funções que alteram o estado do jogo  
     // =========================================================================
-    moverParaSala(novaSalaId: string) {
-        this.jogador.salaId = novaSalaId;
-        this._salvarJogador = true;
-
-        if(this.sala && this._salvarSala) {
+    async moverParaSala(novaSalaNome: string) {
+        if(this._salvarJogador || (this.sala && this._salvarSala)) {
             throw new Error("Deve salvar antes!");
         }
-        this.sala = null; // Forçar recarregar a sala
+
+        const { entidade, sala } = (await EntidadeRepository.moveParaSalaNome(db, this.jogador.id, novaSalaNome)) || {};
+        if(!entidade || !sala) {
+            throw new Error("Erro ao mover para a sala " + novaSalaNome);
+        }
+
+        this.jogador = entidade;
+        this._salvarJogador = false;
+
+        this.sala = sala;
         this._salvarSala = false;
     }
 
-    async moverItem(item: Item, onde: { entidadeId?: string } | { salaId?: string } | { itemContainerId?: string }) {
-        await ItemRepository.moverItem(db, item.id, onde);
+    async moverItem(item: Item, quantidade: number, onde: { entidadeId?: string } | { salaId?: string } | { itemContainerId?: string }) {
+        await ItemRepository.moverItem(db, item.id, quantidade, onde);
 
         this.mochila = null;
         this.itensNoChao = null;
+    }
+
+    async criarItem(item: { tipo: string, estado?: Estado }, quantidade: number, onde: { entidadeId?: string } | { salaId?: string } | { itemContainerId?: string }) {
+        await ItemRepository.criarItem(db, item, quantidade, onde);
+
+        this.mochila = null;
+        this.itensNoChao = null;
+    }
+
+    async alterarEstadoSala(novoEstado: Estado) {
+        const sala = await this.getSala();
+
+        sala.estado = { ...sala.estado, ...novoEstado };
+        this._salvarSala = true;
     }
 
     async salvar() {
@@ -194,7 +220,8 @@ export class Contexto {
     }
 
     async descricaoSala() {
-        let salaConfig = getSalaConfig(this.jogador.salaId);
+        const sala = await this.getSala();
+        let salaConfig = getSalaConfig(sala.nome);
 
         const descr = await salaConfig.descricao(this);
         if(descr) {
@@ -219,7 +246,8 @@ export class Contexto {
         }
         
         return {
-            id: this.jogador.salaId,
+            id: sala.id,
+            nome: sala.nome,
             descricao: descricaoSala, 
             itens: descricaoItens,
             entidades: descricaoEntidades,

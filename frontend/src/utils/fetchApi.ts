@@ -124,6 +124,7 @@ export type RespostaSituacao = {
     };
     sala?: {
         id: string;
+        nome: string;
         itens?: Omit<RespostaItens, "descricao">[] | null;
         entidades?: Omit<RespostaEntidades, "descricao">[] | null;
         atualizadoEm: string;
@@ -146,8 +147,8 @@ export const fetchClient = {
     
     salaOlhar: () => doFetchApi<{ sala: RespostaSala } & RespostaSituacao>("get", "/sala/olhar"),
     salaMover: (direcao: string) => doFetchApi<RespostaSituacao>("post", "/sala/mover", { body: { direcao } }),
-    itemPegar: (item: string) => doFetchApi<RespostaSituacao>("post", "/item/pegar", { body: { item } }),
-    itemLargar: (item: string) => doFetchApi<RespostaSituacao>("post", "/item/largar", { body: { item } }),
+    itemPegar: (item: string, quantidade?: number) => doFetchApi<RespostaSituacao>("post", "/item/pegar", { body: { item, quantidade } }),
+    itemLargar: (item: string, quantidade?: number) => doFetchApi<RespostaSituacao>("post", "/item/largar", { body: { item, quantidade } }),
 };
 
 // */

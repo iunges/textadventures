@@ -3,6 +3,7 @@ import { apiDocPaths } from "../docs/head.ts";
 import { UserRepository } from "../repositories/userRepository.ts";
 import { db } from "../db/drizzle.ts";
 import bcrypt from "bcryptjs";
+import { RevokeSessionError } from "../middlewares/authMiddleware.ts";
 
 // Autenticação simples usando nome de usuário e senha
 export class AuthController {
@@ -61,11 +62,6 @@ export class AuthController {
     }
 
     static logout: RequestHandler = async (req, res) => {
-        const session = req.session || {}; 
-        session.username = undefined;
-        req.session = session;
-        res.status(200).json({ 
-            message: "Desconectado com sucesso." 
-        });
+        throw new RevokeSessionError("OK");
     }
 }

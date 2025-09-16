@@ -26,7 +26,7 @@ export const tableEntidades = pgTable('entidades', {
     tipo: enumTipoEntidade('tipo').notNull(),
 
     // Onde a entidade está atualmente no mundo
-    salaId: varchar('sala_id', { length: 100 }).references(() => tableSalas.id).notNull(),
+    salaId: uuid('sala_id').references(() => tableSalas.id).notNull(),
 
     // Se a entidade for um jogador, aqui está o link para sua conta
     username: varchar('username', { length: 50 }).references(() => tableUsers.username, { onDelete: 'restrict' }).unique(),

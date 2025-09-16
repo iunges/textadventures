@@ -28,14 +28,14 @@ export class SalaController {
 
         const ctx = await Contexto.carregar(usuario.username);
 
-        const salaConfig = getSalaConfig(ctx.jogador.salaId);
+        const salaConfig = getSalaConfig((await ctx.getSala()).nome);
         const conexao = body.direcao in salaConfig.conexoes && salaConfig.conexoes[body.direcao];
         if(!conexao) {
             ctx.escrevaln("Você não pode fazer isso.");
         } else {
-            const novaSalaId = await conexao(ctx);
-            if(novaSalaId) {
-                await ctx.moverParaSala(novaSalaId);
+            const novaSalaNome = await conexao(ctx);
+            if(novaSalaNome) {
+                await ctx.moverParaSala(novaSalaNome);
             }
         }
 

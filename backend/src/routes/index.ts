@@ -4,6 +4,7 @@ import { logMiddleware } from "./logMiddleware.ts";
 import { getItemRouter } from "./itemRoute.ts";
 import { getSalaRouter } from "./salaRoute.ts";
 import { getAuthRouter } from "./authRoute.ts";
+import { COOKIE_NAME, COOKIE_OPTIONS, RevokeSessionError } from "../middlewares/authMiddleware.ts";
 
 const routes = (app: Express) => {
 	// Só fazer log das rotas se estiver em desenvolvimento, desativar em produção
@@ -39,6 +40,14 @@ const routes = (app: Express) => {
 	// Por último o middleware de tratamento de erros
 	app.use(((error, req, res, next) => {
         console.error(error);
+
+		if(error instanceof RevokeSessionError) {
+			res.status(error.message === "OK" ? 200 : 401)
+				.clearCookie(COOKIE_NAME, COOKIE_OPTIONS)
+				.json({ error: "Sessão inválida ou expirada" });
+			return;
+		}
+
 		if(!res.headersSent) {
 			res.status(500).json({ error: "Erro interno do servidor", message: error.message });
 		}

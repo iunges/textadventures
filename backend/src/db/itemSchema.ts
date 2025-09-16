@@ -1,8 +1,12 @@
-import { pgTable, uuid, varchar, jsonb, check, type AnyPgColumn, numeric, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, jsonb, check, type AnyPgColumn, timestamp, integer, uniqueIndex, pgEnum } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { tableEntidades } from './entidadeSchema.js';
 import { tableSalas } from './salaSchema.js';
 import { type Estado, type EstadoItem } from './estadoSchema.ts';
+
+export const enumLocalTipo = pgEnum('local_tipo', [
+    "ENTIDADE", "SALA", "CONTAINER"
+]);
 
 export const tableItens = pgTable('itens', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -10,19 +14,11 @@ export const tableItens = pgTable('itens', {
     // Que tipo de item é esse (ex: "espada", "pocao", "chave")
     tipo: varchar('tipo', { length: 100 }).notNull(),
 
-    // Quantidade desse item (para itens empilháveis)
-    quantidade: numeric('quantidade', { mode: 'number' }).default(1).notNull(),
+    // Quantidade desse item (para itens empilháveis) Sempre >= 1
+    quantidade: integer('quantidade').default(1).notNull(),
 
-    // --- Localização do Item (Apenas um deve ser NÃO NULO) ---
-
-    // Se o item pertence a uma entidade (inventário)
-    entidadeId: uuid('entidade_id').references(() => tableEntidades.id, { onDelete: 'restrict' }),
-
-    // Se o item está no chão de uma sala
-    salaId: varchar('sala_id', { length: 100 }).references(() => tableSalas.id, { onDelete: 'restrict' }),
-
-    // Se o item está dentro de outro item (container)
-    itemContainerId: uuid('item_container_id').references((): AnyPgColumn => tableItens.id, { onDelete: 'restrict' }),
+    localTipo: enumLocalTipo('local_tipo').notNull(),
+    localId: uuid('local_id').notNull(),
 
     criadoEm: timestamp('criado_em').defaultNow().notNull(),
     atualizadoEm: timestamp('atualizado_em').defaultNow().notNull(),
@@ -32,7 +28,9 @@ export const tableItens = pgTable('itens', {
     estado: jsonb('estado').$type<Estado>().default({}).notNull(),
 },
     (table) => [
-        check('check_location', sql`num_nonnulls(entidade_id, sala_id, item_container_id) = 1`),
+        // Garante que o item esteja em apenas EM UM LUGAR
+        uniqueIndex("idx_unico_local")
+            .on(table.tipo, table.localTipo, table.localId)
     ]
 );
 

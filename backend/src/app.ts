@@ -4,6 +4,7 @@ import cors from "cors";
 
 import routes from "./routes/index.ts";
 import cookieSession from "cookie-session";
+import { COOKIE_NAME, COOKIE_OPTIONS } from "./middlewares/authMiddleware.ts";
 
 const app = express();
 // If app is served through a proxy, trust the proxy to allow HTTPS protocol to be detected
@@ -65,17 +66,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use(cookieSession({
-  name: '__Secure-textadventures.session_token',
+  name: COOKIE_NAME,
   secret: process.env.COOKIE_SECRET || 'default_cookie_secret_change_me',
 
   // Cookie Options
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  secure: true, //process.env.NODE_ENV === 'production' ? true : false, // set to true in production
-
-  httpOnly: true,
-  sameSite: "none", //process.env.NODE_ENV === 'production' ? 'none' : "lax",
-  domain: process.env.COOKIE_DOMAIN || undefined,
-  partitioned: true,
+  ...COOKIE_OPTIONS
 }));
 
 // Passando para o arquivo de rotas o app, que envia junto uma instância do express

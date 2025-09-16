@@ -15,6 +15,7 @@ import { zafiir } from './jogos/zafiir';
 // @ts-ignore
 import './style.css';
 import { _prompt, addCommand, prompt, termClear, termPrint } from './terminal';
+import { fetchClient } from './utils/fetchApi';
 
 type ListaJogo = {
     descricao: string[];
@@ -238,15 +239,16 @@ addCommand("ajuda", {
     }
 });
 
-addCommand("fetch", {
-    f: async (url) => {
-        termPrint("Fazendo fetch para "+url+"...");
-        const result = await fetch(url);
-        const json = await result.json();
-
-        termPrint(JSON.stringify(json, null, 4));
-    }
-})
+try {
+    const { resposta, sala, jogador } = await fetchClient.salaOlhar();
+    termPrint("Olá novamente", jogador.username);
+    
+    await principal();
+} catch(e) {
+    console.error(e);
+    termPrint("Parece que você não está logado.");
+    termPrint("Use o comando 'jogar online' para fazer login ou criar uma conta. \n\n");
+}
 
 termPrint(
     'Seja bem vindo! comece já a sua aventura!'
