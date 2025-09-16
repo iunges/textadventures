@@ -16,8 +16,12 @@ export const authMiddleware: RequestHandler = async (req, res, next) => {
         req.session = {
             ...(req.session || {}),
             id: "00000000-0000-4000-0000-000000000000",
-            username: "jogador"
+            username: "jogador",
+            count: 1
         }
+    } else {
+        // Atualiza o contador de requisições na sessão
+        session.count = (session.count || 1) + 1;
     }
     
     next();

@@ -21,7 +21,8 @@ export class SalaController {
             ...ctx.retornarSituacao(),
             // LOG APENAS
             tempoResposta: (performance.now() - res.locals.logData.tempoInicio),
-            cookie: req.headers["cookie"]
+            cookie: req.headers["cookie"],
+            session: req.session,
         });
     }
 

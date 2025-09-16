@@ -1,5 +1,5 @@
 import "dotenv/config";
-import app from "./src/app.ts";
+import app from "../src/app.ts";
 
 // https://vercel.com/guides/using-express-with-vercel
 

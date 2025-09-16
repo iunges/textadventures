@@ -19,6 +19,16 @@ app.use((req, res, next) => {
 
         // Força o protocolo https, pois atrás do proxy ele não reconhece por alguma razão
         req.headers["x-forwarded-proto"] = "https";
+
+        //  Secure Flag cannot be set for unproxied localhost #837 
+        // https://github.com/expressjs/session/issues/837
+        // A ideia é que para o cookie ser enviado, o secure tem que ser true, pois express.session tá com bug
+        // que mesmo quando é localhost ele não envia o cookie se secure for false
+        if(!req.secure) {
+            let objValue = Object.create(null);
+            objValue.value = true;
+            Object.defineProperty(req, "secure", objValue);
+        }
     } catch(e) {
         console.error("Erro ao iniciar o log", e);
     }
@@ -55,8 +65,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use(cookieSession({
-  name: 'session',
-  keys: [process.env.COOKIE_SECRET!, process.env.COOKIE_SECRET!], 
+  name: '__Secure-textadventures.session_token',
+  secret: process.env.COOKIE_SECRET || 'default_cookie_secret_change_me',
 
   // Cookie Options
   maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -65,7 +75,7 @@ app.use(cookieSession({
   httpOnly: true,
   sameSite: "none", //process.env.NODE_ENV === 'production' ? 'none' : "lax",
   domain: process.env.COOKIE_DOMAIN || undefined,
-  // partitioned: true,
+  partitioned: true,
 }));
 
 // Passando para o arquivo de rotas o app, que envia junto uma instância do express
