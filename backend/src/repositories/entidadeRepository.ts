@@ -13,4 +13,12 @@ export class EntidadeRepository {
         })
         .where(eq(tableEntidades.id, entidadeId));
     }
+
+    static async naSala(db: DatabaseType, salaId: string) {
+        const result = await db.select()
+            .from(tableEntidades)
+            .where(eq(tableEntidades.salaId, salaId));
+
+        return result;
+    }
 }

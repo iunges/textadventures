@@ -6,9 +6,12 @@ import { tableUsers } from "./userSchema.ts";
 import { tableEntidades } from "./entidadeSchema.ts";
 import { type Item, tableItens } from "./itemSchema.ts";
 import { salas } from "../jogo/salas/salas.ts";
+import bcrypt from "bcryptjs";
+import { and, isNotNull, sql } from "drizzle-orm";
 
 // Assume que acabou de dar drizzle kit push, então as tabelas estão criadas mas vazias
 try {
+
     const insertSalas: typeof tableSalas.$inferInsert[] = [];
     const insertItens: typeof tableItens.$inferInsert[] = [];
     for(let [salaId, sala] of Object.entries(salas)) {
@@ -30,23 +33,20 @@ try {
         }
     }
 
-    await db.insert(tableSalas).values(insertSalas);
+    // Atualiza ou insere as salas iniciais
+    await db.insert(tableSalas)
+        .values(insertSalas)
+        .onConflictDoUpdate({
+            target: tableSalas.id,
+            set: {
+                estado: sql`EXCLUDED.estado`,
+            }
+        });
+
+    // Deleta todos os itens que estão no chão das salas
+    await db.delete(tableItens).where(isNotNull(tableItens.salaId));
+    // Re-insere os itens iniciais no chão das salas
     await db.insert(tableItens).values(insertItens);
-
-    const [jogador] = await db.insert(tableUsers).values([
-        { id: "00000000-0000-4000-0000-000000000000", username: "jogador", createdAt: new Date() },
-    ]).returning();
-
-    const [jogadorEntidade] = await db.insert(tableEntidades).values([
-        {
-            id: randomUUID(),
-            categoria: "JOGADOR",
-            tipo: "JOGADOR",
-            salaId: "Inicio",
-            usuarioId: jogador.id,
-            estado: {"vivo": 1}
-        },
-    ]).returning();
     
     console.log("Seed inicial criado!");
 

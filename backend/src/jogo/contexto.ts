@@ -49,6 +49,15 @@ export class Contexto {
         return this.itensNoChao;
     }
 
+    entidadesNaSala: Entidade[] | null = null;
+    async getEntidadesNaSala() {
+        if(this.entidadesNaSala) return this.entidadesNaSala;
+
+        const sala = await this.getSala();
+        this.entidadesNaSala = await EntidadeRepository.naSala(db, sala.id);
+        return this.entidadesNaSala;
+    }
+
     global: Sala;
     private _salvarGlobal: boolean = false;
 
@@ -67,21 +76,23 @@ export class Contexto {
 
     private str: string;
 
-    constructor({ jogador, sala, global, itensNoChao }: {
+    constructor({ jogador, sala, global, itensNoChao, mochila }: {
         jogador: Entidade,
         sala: Sala | null,
         global: Sala,
-        itensNoChao: Item[] | null
+        itensNoChao: Item[] | null,
+        mochila: Item[] | null,
     }) {
         this.jogador = jogador;
         this.global = global;
         this.sala = sala;
         this.str = "";
         this.itensNoChao = itensNoChao;
+        this.mochila = mochila;
     }
 
-    static async carregar(usuarioId: string): Promise<Contexto> {
-        const result = await SalaRepository.dadosIniciaisJogador(db, usuarioId);
+    static async carregar(username: string): Promise<Contexto> {
+        const result = await SalaRepository.dadosIniciaisJogador(db, username);
         return new Contexto(result);
     }
 
@@ -89,9 +100,33 @@ export class Contexto {
         return {
             resposta: this.obterTexto(),
             jogador: {
-                id: this.jogador.id,
+                username: this.jogador.username,
                 salaId: this.jogador.salaId,
-            }
+                atualizadoEm: this.jogador.atualizadoEm,
+                mochila: this.mochila ? this.mochila.map(i => ({
+                    id: i.id,
+                    tipo: i.tipo,
+                    quantidade: i.quantidade,
+                    atualizadoEm: i.atualizadoEm
+                })) : undefined,
+            },
+            sala: this.sala ? {
+                id: this.sala.id,
+                atualizadoEm: this.sala.atualizadoEm,
+                itens: this.itensNoChao ? this.itensNoChao.map(i => ({
+                    id: i.id,
+                    tipo: i.tipo,
+                    quantidade: i.quantidade,
+                    atualizadoEm: i.atualizadoEm
+                })) : undefined,
+                entidades: this.entidadesNaSala ? this.entidadesNaSala.map(e => ({
+                    id: e.id,
+                    categoria: e.categoria,
+                    tipo: e.tipo,
+                    username: e.username,
+                    atualizadoEm: e.atualizadoEm
+                })) : undefined,
+            } : undefined,
         };
     }
 
@@ -151,9 +186,11 @@ export class Contexto {
                 id: item.id,
                 tipo: item.tipo,
                 quantidade: item.quantidade,
+                atualizadoEm: item.atualizadoEm,
                 descricao: ctx.obterTexto(),
             });
         }
+        return descricaoItens;
     }
 
     async descricaoSala() {
@@ -167,11 +204,25 @@ export class Contexto {
 
         const descricaoItens = await Contexto._descricaoItens(this, await this.getItensNoChao());
         const conexoes = Object.keys(salaConfig.conexoes);
+
+        const entidades = await this.getEntidadesNaSala();
+        const descricaoEntidades = [];
+        for(let entidade of entidades) {
+            descricaoEntidades.push({
+                id: entidade.id,
+                categoria: entidade.categoria,
+                tipo: entidade.tipo,
+                username: entidade.username,
+                atualizadoEm: entidade.atualizadoEm,
+                descricao: entidade.tipo === 'JOGADOR' ? "" : `um ${entidade.tipo.toLowerCase()}`,
+            });
+        }
         
         return {
             id: this.jogador.salaId,
             descricao: descricaoSala, 
-            itens: descricaoItens, 
+            itens: descricaoItens,
+            entidades: descricaoEntidades,
             conexoes
         };
     }

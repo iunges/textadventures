@@ -4,7 +4,7 @@ import { tableUsers } from "../db/userSchema.ts";
 
 export const authMiddleware: RequestHandler = async (req, res, next) => {
     const session = req.session || {};
-    if(!session || !session.id || !session.username) {
+    if(!session || !session.username) {
         // console.log("Sessão inválida, criando nova sessão de usuário...");
         /*const userInfo = await db.select().from(tableUsers).limit(1);
         if(!userInfo || userInfo.length === 0 || !userInfo[0]) {
@@ -13,15 +13,14 @@ export const authMiddleware: RequestHandler = async (req, res, next) => {
         }
         const user = userInfo[0];*/
 
-        req.session = {
+        /*req.session = {
             ...(req.session || {}),
             id: "00000000-0000-4000-0000-000000000000",
-            username: "jogador",
-            count: 1
-        }
-    } else {
-        // Atualiza o contador de requisições na sessão
-        session.count = (session.count || 1) + 1;
+            username: "jogador"
+        }*/
+
+        res.status(401).json({ error: "Usuário não autenticado" });
+        return;
     }
     
     next();

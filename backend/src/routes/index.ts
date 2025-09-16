@@ -3,6 +3,7 @@ import { getDocsRouter } from "./docsRoute.ts";
 import { logMiddleware } from "./logMiddleware.ts";
 import { getItemRouter } from "./itemRoute.ts";
 import { getSalaRouter } from "./salaRoute.ts";
+import { getAuthRouter } from "./authRoute.ts";
 
 const routes = (app: Express) => {
 	// Só fazer log das rotas se estiver em desenvolvimento, desativar em produção
@@ -14,18 +15,20 @@ const routes = (app: Express) => {
         getItemRouter(),
         getSalaRouter(),
         getDocsRouter(),
+		getAuthRouter()
     );
 
 	app.post("/cookie", (req, res) => {
 		const value = req.body.cookie;
-		if(!value) {
-			res.status(400).json({ error: "Cookie value is required" });
-			return;
+		if(value) {
+			res.setHeader('Set-Cookie', value);
 		}
-
-		res.setHeader('Set-Cookie', value);
 		res.status(200).json({ 
 			headers: JSON.parse(JSON.stringify(req.headers,null,2)),
+			// LOG APENAS
+            tempoResposta: (performance.now() - res.locals.logData.tempoInicio),
+            cookie: req.headers["cookie"],
+            session: req.session,
 		});
 	})
 

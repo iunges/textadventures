@@ -9,7 +9,7 @@ export class ItemController {
         const usuario = req.session! as User;
         const { body } = parseRequest(itemDocs["/item/pegar"].post.schema, req);
 
-        const ctx = await Contexto.carregar(usuario.id);
+        const ctx = await Contexto.carregar(usuario.username);
 
         let objetos = await ctx.getItensNoChao();
         if (objetos.length == 0) {
@@ -24,6 +24,8 @@ export class ItemController {
         }
 
         await ctx.salvar();
+
+        await Promise.all([ctx.getItensNoChao(), ctx.getMochila()]);
         res.json({ ...ctx.retornarSituacao() });
     }
 
@@ -31,7 +33,7 @@ export class ItemController {
         const usuario = req.session! as User;
         const { body } = parseRequest(itemDocs["/item/largar"].post.schema, req);
 
-        const ctx = await Contexto.carregar(usuario.id);
+        const ctx = await Contexto.carregar(usuario.username);
 
         let objetos = await ctx.getMochila();
         if (objetos.length == 0) {
@@ -46,6 +48,8 @@ export class ItemController {
         }
 
         await ctx.salvar();
+
+        await Promise.all([ctx.getItensNoChao(), ctx.getMochila()]);
         res.json({ ...ctx.retornarSituacao() });
     }
 }

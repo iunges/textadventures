@@ -1,3 +1,11 @@
+export class APIError extends Error {
+    status: number
+    constructor(message: string, status: number) {
+        super(message);
+        this.status = status;
+    }
+}
+
 export function getApiUrl() {
     // @ts-ignore
     let url = import.meta.env.VITE_API_URL;
@@ -75,7 +83,7 @@ export const doFetchApi = async <T>(method: string, route: string, request?: obj
         let json: unknown = await fetchRes.json();
 
         if(!success) {
-            throw new Error(JSON.stringify(json, null, 2));
+            throw new APIError(JSON.stringify(json, null, 2), fetchRes.status);
         } else {
             return json as T;
         }
@@ -83,36 +91,59 @@ export const doFetchApi = async <T>(method: string, route: string, request?: obj
         let text: string = await fetchRes.text();
 
         if(!success) {
-            throw new Error(text);
+            throw new APIError(text, fetchRes.status);
         } else {
             return text as T;
         }
     }
 };
-
-export type RespostaSituacao = {
-    resposta: string;
-    jogador: {
-        id: string;
-        salaId: string;
-    };
-}
-
 export type RespostaItens = {
     id: string;
     tipo: string;
     descricao: string;
     quantidade: number;
+    atualizadoEm: string;
+}
+
+export type RespostaEntidades = {
+    id: string;
+    categoria: string;
+    tipo: string;
+    descricao: string;
+    username?: string;
+    atualizadoEm: string;
+}
+
+export type RespostaSituacao = {
+    resposta: string;
+    jogador: {
+        username: string;
+        salaId: string;
+        mochila?: (Omit<RespostaItens, "descricao"> & RespostaItens)[] | null;
+        atualizadoEm: string;
+    };
+    sala?: {
+        id: string;
+        itens?: Omit<RespostaItens, "descricao">[] | null;
+        entidades?: Omit<RespostaEntidades, "descricao">[] | null;
+        atualizadoEm: string;
+    } | null;
 }
 
 export type RespostaSala = {
     id: string;
     descricao: string;
     itens?: RespostaItens[] | null;
+    entidades?: RespostaEntidades[] | null;
     conexoes?: string[] | null;
+    atualizadoEm: string;
 }
 
 export const fetchClient = {
+    login: (username: string, password: string) => doFetchApi<{ user: { username: string; createdAt: string; } }>("post", "/auth/login", { body: { username, password } }),
+    cadastrar: (username: string, password: string) => doFetchApi<{ user: { username: string; createdAt: string; } }>("post", "/auth/cadastrar", { body: { username, password } }),
+    logout: () => doFetchApi<void>("post", "/auth/logout"),
+    
     salaOlhar: () => doFetchApi<{ sala: RespostaSala } & RespostaSituacao>("get", "/sala/olhar"),
     salaMover: (direcao: string) => doFetchApi<RespostaSituacao>("post", "/sala/mover", { body: { direcao } }),
     itemPegar: (item: string) => doFetchApi<RespostaSituacao>("post", "/item/pegar", { body: { item } }),

@@ -45,6 +45,33 @@ export const salasInicio = {
         itensIniciais: [{
             tipo: "Pedra",
             quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
+        },{
+            tipo: "Pedra",
+            quantidade: 1
         }]
     },
     Tesouro: {

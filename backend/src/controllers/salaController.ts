@@ -11,18 +11,14 @@ export class SalaController {
     static descreverSalaAtual: RequestHandler = async (req, res) => {
         const usuario = req.session! as User;
 
-        const ctx = await Contexto.carregar(usuario.id);
+        const ctx = await Contexto.carregar(usuario.username);
 
         const result = await ctx.descricaoSala();
         await ctx.salvar();
 
         res.json({
-            sala: result,
             ...ctx.retornarSituacao(),
-            // LOG APENAS
-            tempoResposta: (performance.now() - res.locals.logData.tempoInicio),
-            cookie: req.headers["cookie"],
-            session: req.session,
+            sala: result
         });
     }
 
@@ -30,7 +26,7 @@ export class SalaController {
         const usuario = req.session! as User;
         const { body } = parseRequest(salaDocs["/sala/mover"].post.schema, req);
 
-        const ctx = await Contexto.carregar(usuario.id);
+        const ctx = await Contexto.carregar(usuario.username);
 
         const salaConfig = getSalaConfig(ctx.jogador.salaId);
         const conexao = body.direcao in salaConfig.conexoes && salaConfig.conexoes[body.direcao];

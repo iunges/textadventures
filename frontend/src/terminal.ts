@@ -57,6 +57,14 @@ export function prompt(...str: unknown[]): Promise<string> {
     });
 }
 
+let passwordMode = false;
+export async function passwordPrompt(...str: unknown[]) {
+    passwordMode = true;
+    const result = await prompt(...str);
+    passwordMode = false;
+    return result;
+}
+
 let command = '';
 type ComandConfig = {
     f: (...args: string[]) => void | Promise<void>,
@@ -137,7 +145,7 @@ function runFakeTerminal() {
             default: // Print all other characters for demo
                 if (e >= String.fromCharCode(0x20) && e <= String.fromCharCode(0x7E) || e >= '\u00a0') {
                     command += e;
-                    term.write(e);
+                    term.write(passwordMode ? "*" : e);
                 }
         }
     });

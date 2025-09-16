@@ -17,12 +17,22 @@ export const salaDocs = {
                         conexoes: z.array(z.string()).meta({
                             example: ["N", "S"],
                         }),
+                        atualizadoEm: z.iso.datetime().meta({ example: "2023-10-05T14:48:00.000Z" }),
                         itens: z.array(z.object({
                             id: z.uuid().meta({ example: "UUID" }),
                             tipo: z.string().meta({ example: "pedra" }),
                             quantidade: z.number().meta({ example: 1 }),
                             descricao: z.string().meta({ example: "Uma pedra comum." }),
-                        }))
+                            atualizadoEm: z.iso.datetime().meta({ example: "2023-10-05T14:48:00.000Z" }),
+                        })),
+                        entidades: z.array(z.object({
+                            id: z.uuid().meta({ example: "UUID" }),
+                            categoria: z.string().meta({ example: "JOGADOR" }),
+                            tipo: z.string().meta({ example: "JOGADOR" }),
+                            username: z.string().meta({ example: "usuario123" }),
+                            atualizadoEm: z.iso.datetime().meta({ example: "2023-10-05T14:48:00.000Z" }),
+                            descricao: z.string().meta({ example: "" }),
+                        })).optional(),
                     }),
                     resposta: z.string().meta({
                         example: "Está tudo escuro aqui.",

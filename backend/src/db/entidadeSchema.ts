@@ -29,7 +29,7 @@ export const tableEntidades = pgTable('entidades', {
     salaId: varchar('sala_id', { length: 100 }).references(() => tableSalas.id).notNull(),
 
     // Se a entidade for um jogador, aqui está o link para sua conta
-    usuarioId: uuid('usuario_id').references(() => tableUsers.id, { onDelete: 'restrict' }).unique(),
+    username: varchar('username', { length: 50 }).references(() => tableUsers.username, { onDelete: 'restrict' }).unique(),
 
     criadoEm: timestamp('criado_em').defaultNow().notNull(),
     atualizadoEm: timestamp('atualizado_em').defaultNow().notNull(),
