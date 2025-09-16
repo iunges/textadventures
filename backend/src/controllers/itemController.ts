@@ -2,10 +2,11 @@ import { type RequestHandler } from "express";
 import { Contexto } from "../jogo/contexto.ts";
 import { parseRequest } from "../utils/docs.ts";
 import { itemDocs } from "../docs/itemDocs.ts";
+import type { User } from "../db/userSchema.ts";
 
 export class ItemController {
     static pegarItem: RequestHandler = async (req, res) => {
-        const usuario = res.locals.auth!.user;
+        const usuario = req.session! as User;
         const { body } = parseRequest(itemDocs["/item/pegar"].post.schema, req);
 
         const ctx = await Contexto.carregar(usuario.id);
@@ -27,7 +28,7 @@ export class ItemController {
     }
 
     static largarItem: RequestHandler = async (req, res) => {
-        const usuario = res.locals.auth!.user;
+        const usuario = req.session! as User;
         const { body } = parseRequest(itemDocs["/item/largar"].post.schema, req);
 
         const ctx = await Contexto.carregar(usuario.id);

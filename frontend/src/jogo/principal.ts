@@ -69,6 +69,12 @@ export const principal = async () => {
         } catch(err) {
             console.error(err);
             termPrint("Erro:", err?.toString());
+
+            // Pergunta se quer tentar novamente
+            const tentarNovamente = (await prompt("\nQuer continuar? (S/N) ")).trim().toUpperCase();
+            if(tentarNovamente !== "S" && tentarNovamente !== "SIM") {
+                break;
+            }
         }
     }
 };

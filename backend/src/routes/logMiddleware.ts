@@ -7,8 +7,9 @@ export const logMiddleware: RequestHandler = (req,res,next) => {
     req.socket.remoteAddress ||
     null;
 
-    console.log(timestamp+" "+ip+" "+req.protocol + "://" + req.get("host") + " " + req.method + " " + req.originalUrl);
+    console.log(timestamp+" "+ip+" "+req.protocol + "://" + req.get("host") + " " + JSON.stringify({...req.session}) + " " + req.method + " " + req.originalUrl);
     // Log Headers
-    //console.log(JSON.stringify(req.headers));
+    console.log(req.headers["cookie"] || "Sem cookies");
+
     next();
 };

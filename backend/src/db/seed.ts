@@ -34,7 +34,7 @@ try {
     await db.insert(tableItens).values(insertItens);
 
     const [jogador] = await db.insert(tableUsers).values([
-        { id: randomUUID(), username: "jogador", createdAt: new Date() },
+        { id: "00000000-0000-4000-0000-000000000000", username: "jogador", createdAt: new Date() },
     ]).returning();
 
     const [jogadorEntidade] = await db.insert(tableEntidades).values([

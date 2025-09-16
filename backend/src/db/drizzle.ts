@@ -14,7 +14,7 @@ if (!connectionString) { throw new Error("POSTGRES_URL is not set in environment
 const client = postgres(connectionString, { prepare: false });
 export const db = drizzle({
     client,
-    logger: process.env.DEBUGLOG === "true" ? true : false,
+    // logger: process.env.DEBUGLOG === "true" ? true : false,
 });
 
 export type DatabaseType = typeof db;

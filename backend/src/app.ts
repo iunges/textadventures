@@ -3,8 +3,24 @@ import express from "express";
 import cors from "cors";
 
 import routes from "./routes/index.ts";
+import cookieSession from "cookie-session";
 
 const app = express();
+// If app is served through a proxy, trust the proxy to allow HTTPS protocol to be detected
+// https://expressjs.com/en/guide/behind-proxies.html
+app.set('trust proxy', true);
+
+app.use((req, res, next) => {
+    try {
+        res.locals = res.locals || {};
+        res.locals.logData = {
+            tempoInicio: performance.now()
+        };
+    } catch(e) {
+        console.error("Erro ao iniciar o log", e);
+    }
+    next();
+});
 
 // ========================================
 //             Configuração Cors
@@ -34,6 +50,19 @@ app.use(cors({
 // habilitando o uso de json pelo express
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+app.use(cookieSession({
+  name: 'session',
+  keys: [process.env.COOKIE_SECRET!, process.env.COOKIE_SECRET!], 
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  secure: process.env.NODE_ENV === 'production' ? true : false, // set to true in production
+
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : "lax",
+  // partitioned: true,
+}));
 
 // Passando para o arquivo de rotas o app, que envia junto uma instância do express
 routes(app);

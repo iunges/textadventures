@@ -5,10 +5,11 @@ import { Contexto } from "../jogo/contexto.ts";
 import { getSalaConfig } from "../jogo/salas/salas.ts";
 import { parseRequest } from "../utils/docs.ts";
 import { salaDocs } from "../docs/salaDocs.ts";
+import type { User } from "../db/userSchema.ts";
 
 export class SalaController {
     static descreverSalaAtual: RequestHandler = async (req, res) => {
-        const usuario = res.locals.auth!.user;
+        const usuario = req.session! as User;
 
         const ctx = await Contexto.carregar(usuario.id);
 
@@ -17,12 +18,14 @@ export class SalaController {
 
         res.json({
             sala: result,
-            ...ctx.retornarSituacao()
+            ...ctx.retornarSituacao(),
+            // LOG APENAS
+            tempoResposta: (performance.now() - res.locals.logData.tempoInicio)
         });
     }
 
     static moverParaDirecao: RequestHandler<{ direcao: string }> = async (req, res) => {
-        const usuario = res.locals.auth!.user;
+        const usuario = req.session! as User;
         const { body } = parseRequest(salaDocs["/sala/mover"].post.schema, req);
 
         const ctx = await Contexto.carregar(usuario.id);
