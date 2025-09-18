@@ -3,76 +3,59 @@ import { type Sala, tableSalas } from "../db/salaSchema.ts";
 import { alias } from "drizzle-orm/pg-core";
 import { type Entidade, tableEntidades } from "../db/entidadeSchema.ts";
 import { type Estado } from "../db/estadoSchema.ts";
-import { type Item, tableItens } from "../db/itemSchema.ts";
+import { type Item, tableItens, tableLocais } from "../db/itemSchema.ts";
 import { type DatabaseType } from "../db/drizzle.ts";
 import { RevokeSessionError } from "../middlewares/authMiddleware.ts";
 import { mapArrayWithTable } from "../db/utils.ts";
-import type { SalaNome } from "../jogo/salas/salas.ts";
+import type { SalaNome } from "../jogo/config.ts";
 
 export class SalaRepository {
     static async dadosIniciaisJogador(db: DatabaseType, username: string) {
-        const itensSubquery = db.select({
-            salaId: tableSalas.id,
-            sala_itens: sql`COALESCE(jsonb_agg(${tableItens}.*), '[]'::jsonb)`.mapWith(mapArrayWithTable(tableItens)).as("sala_itens"),
-            })
-            .from(tableItens)
-            .innerJoin(tableSalas, eq(tableItens.ondeId, tableSalas.localId))
-            .where(gte(tableItens.quantidade, 1))
-            .groupBy(tableSalas.id)
-            .as("itens_sub");
+        const jogadorResult = await db.select({
+            salaId: tableEntidades.salaId,
+            global: tableSalas
+        })
+        .from(tableEntidades)
+        .leftJoin(tableSalas, eq(tableSalas.nome, "Global"))
+        .where(eq(tableEntidades.username, username))
+        .limit(1);
 
-        const mochilaSubquery = db.select({
-            entidadeId: tableEntidades.id,
-            mochila_itens: sql`COALESCE(jsonb_agg(${tableItens}.*), '[]'::jsonb)`.mapWith(mapArrayWithTable(tableItens)).as("mochila_itens"),
-            })
-            .from(tableItens)
-            .innerJoin(tableEntidades, eq(tableItens.ondeId, tableEntidades.localId))
-            .where(gte(tableItens.quantidade, 1))
-            .groupBy(tableEntidades.id)
-            .as("mochila_sub");
+        if(jogadorResult.length === 0 || !jogadorResult[0].salaId) {
+            throw new RevokeSessionError("Usuário ou entidade não existe!");
+        }
+        const { salaId, global } = jogadorResult[0];
 
-        const entidadeSubquery = db.select({
-            entidadeSalaId: tableEntidades.salaId,
-            entidades: sql`COALESCE(jsonb_agg(${tableEntidades}.*), '[]'::jsonb)`.mapWith(mapArrayWithTable(tableEntidades)).as("entidades"),
-            })
-            .from(tableEntidades)
-            .groupBy(tableEntidades.salaId)
-            .as("entidade_sub");
-
-        const aliasSalaGlobal = alias(tableSalas, "global");
-        const result = await db.select({
-                sala: tableSalas,
-                entidade: tableEntidades,
-                global: aliasSalaGlobal,
-                itensNoChao: itensSubquery.sala_itens,
-                mochila: mochilaSubquery.mochila_itens,
-                entidadesNaSala: entidadeSubquery.entidades
-            })
-            .from(tableEntidades)
-            .leftJoin(tableSalas, eq(tableEntidades.salaId, tableSalas.id))
-            .leftJoin(aliasSalaGlobal, eq(aliasSalaGlobal.nome, "Global"))
-            .leftJoin(itensSubquery, eq(itensSubquery.salaId, tableSalas.id))
-            .leftJoin(mochilaSubquery, eq(mochilaSubquery.entidadeId, tableEntidades.id))
-            .leftJoin(entidadeSubquery, eq(entidadeSubquery.entidadeSalaId, tableSalas.id))
-            .where(eq(tableEntidades.username, username))
-            .limit(1);
+        const result = await db.query.tableSalas.findFirst({
+            where: eq(tableSalas.id, salaId),
+            with: {
+                itens: true,
+                entidades: {
+                    with: {
+                        mochila: true
+                    }
+                }
+            }
+        });
             
-        if(!result || result.length === 0 || !result[0]) {
-            throw new RevokeSessionError("Usuário não existe!");
-        }
-    
-        const { entidade, sala, global, itensNoChao, mochila, entidadesNaSala } = result[0];
-        if(!entidade || !sala) {
-            throw new RevokeSessionError("Entidade em sala que não existe!");
+        if(!result) {
+            throw new RevokeSessionError("Usuário em sala que não existe!");
         }
 
-        return { 
-            jogador: entidade, 
-            sala: sala, 
-            global: global!, 
-            itensNoChao: itensNoChao || [],
-            mochila: mochila || [],
-            entidadesNaSala: entidadesNaSala || []
+        const { itens, entidades, ...sala } = result;
+        
+        const index = entidades.findIndex(e => e.username === username);
+        if(index < 0 ) {
+            throw new RevokeSessionError("Jogador não está na sala!");
+        }
+        const { mochila, ...jogador} = entidades.splice(index, 1)[0];
+
+        return {
+            jogador: jogador,
+            sala: sala,
+            global: global!,
+            itensNoChao: itens.filter(i => i.quantidade > 0),
+            mochila: mochila.filter(i => i.quantidade > 0),
+            entidadesNaSala: entidades,
         };
     }
 

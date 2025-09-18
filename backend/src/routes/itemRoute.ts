@@ -1,5 +1,4 @@
 import express from "express";
-import { SalaController } from "../controllers/salaController.ts";
 import { authMiddleware } from "../middlewares/authMiddleware.ts";
 import { ItemController } from "../controllers/itemController.ts";
 

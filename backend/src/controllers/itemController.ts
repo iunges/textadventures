@@ -1,15 +1,10 @@
 import { type RequestHandler } from "express";
-import { Contexto } from "../jogo/contexto.ts";
-import { parseRequest } from "../utils/docs.ts";
 import { itemDocs } from "../docs/itemDocs.ts";
-import type { User } from "../db/userSchema.ts";
+import { ControllerBase } from "./ControllerBase.ts";
 
-export class ItemController {
+export class ItemController extends ControllerBase {
     static pegarItem: RequestHandler = async (req, res) => {
-        const usuario = req.session! as User;
-        const { body } = parseRequest(itemDocs["/item/pegar"].post.schema, req);
-
-        const ctx = await Contexto.carregar(usuario.username);
+        const { ctx, body } = await this.loadRequest(itemDocs["/item/pegar"].post.schema, req, res);
 
         let objetos = await ctx.getItensNoChao();
         if (objetos.length == 0) {
@@ -19,21 +14,15 @@ export class ItemController {
             if (!objeto) {
                 ctx.escrevaln("Não tem isso aqui.");
             } else {
-                await ctx.moverItem(objeto, body.quantidade, ctx.jogador);
+                await ctx.moverItem(objeto, { quantidade: body.quantidade, ondeId: ctx.jogador.id });
             }
         }
 
-        await ctx.salvar();
-
-        await Promise.all([ctx.getItensNoChao(), ctx.getMochila()]);
-        res.json({ ...ctx.retornarSituacao() });
+        await this.sendResponse(ctx, req, res);
     }
 
     static largarItem: RequestHandler = async (req, res) => {
-        const usuario = req.session! as User;
-        const { body } = parseRequest(itemDocs["/item/largar"].post.schema, req);
-
-        const ctx = await Contexto.carregar(usuario.username);
+        const { ctx, body } = await this.loadRequest(itemDocs["/item/largar"].post.schema, req, res);
 
         let objetos = await ctx.getMochila();
         if (objetos.length == 0) {
@@ -43,13 +32,10 @@ export class ItemController {
             if (!objeto) {
                 ctx.escrevaln("Não tem isso na mochila.");
             } else {
-                await ctx.moverItem(objeto, body.quantidade, await ctx.getSala());
+                await ctx.moverItem(objeto, { quantidade: body.quantidade, ondeId: (await ctx.getSala()).id });
             }
         }
 
-        await ctx.salvar();
-
-        await Promise.all([ctx.getItensNoChao(), ctx.getMochila()]);
-        res.json({ ...ctx.retornarSituacao() });
+        await this.sendResponse(ctx, req, res);
     }
 }

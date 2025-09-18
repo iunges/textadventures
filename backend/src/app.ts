@@ -2,9 +2,9 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
-import routes from "./routes/index.ts";
 import cookieSession from "cookie-session";
 import { COOKIE_NAME, COOKIE_OPTIONS } from "./middlewares/authMiddleware.ts";
+import routes from "./routes/index.ts";
 
 const app = express();
 // If app is served through a proxy, trust the proxy to allow HTTPS protocol to be detected

@@ -4,6 +4,7 @@
 import "dotenv/config";
 import { sql } from "drizzle-orm";
 import { PgDatabase, PgTransaction } from "drizzle-orm/pg-core";
+import * as schema from "./schema.ts";
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -15,6 +16,7 @@ if (!connectionString) { throw new Error("POSTGRES_URL is not set in environment
 const client = postgres(connectionString, { prepare: false });
 export const db = drizzle({
     client,
+    schema: schema,
     // logger: process.env.DEBUGLOG === "true" ? true : false,
 });
 

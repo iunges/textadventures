@@ -1,32 +1,17 @@
 import { type RequestHandler } from "express";
-import { SalaRepository } from "../repositories/salaRepository.ts";
-import { db } from "../db/drizzle.ts";
-import { Contexto } from "../jogo/contexto.ts";
-import { getSalaConfig, type SalaNome } from "../jogo/salas/salas.ts";
-import { parseRequest } from "../utils/docs.ts";
 import { salaDocs } from "../docs/salaDocs.ts";
-import type { User } from "../db/userSchema.ts";
+import { getSalaConfig, type SalaNome } from "../jogo/config.ts";
+import { ControllerBase } from "./ControllerBase.ts";
 
-export class SalaController {
+export class SalaController extends ControllerBase {
     static descreverSalaAtual: RequestHandler = async (req, res) => {
-        const usuario = req.session! as User;
+        const { ctx } = await this.loadRequest(salaDocs["/sala/olhar"].get.schema, req, res);
 
-        const ctx = await Contexto.carregar(usuario.username);
-
-        const result = await ctx.descricaoSala();
-        await ctx.salvar();
-
-        res.json({
-            ...ctx.retornarSituacao(),
-            sala: result
-        });
+        await this.sendResponse(ctx, req, res);
     }
 
     static moverParaDirecao: RequestHandler<{ direcao: string }> = async (req, res) => {
-        const usuario = req.session! as User;
-        const { body } = parseRequest(salaDocs["/sala/mover"].post.schema, req);
-
-        const ctx = await Contexto.carregar(usuario.username);
+        const { ctx, body } = await this.loadRequest(salaDocs["/sala/mover"].post.schema, req, res);
 
         const salaConfig = getSalaConfig((await ctx.getSala()).nome as SalaNome);
         const conexao = body.direcao in salaConfig.conexoes && salaConfig.conexoes[body.direcao];
@@ -39,7 +24,6 @@ export class SalaController {
             }
         }
 
-        await ctx.salvar();
-        res.json({ ...ctx.retornarSituacao() });
+        await this.sendResponse(ctx, req, res);
     }
 }

@@ -1,4 +1,4 @@
-import { Contexto, type SalaType } from "../contexto.ts";
+import { Contexto } from "../contexto.ts";
 
 export const salasInicio = {
     Inicio: {
@@ -9,9 +9,9 @@ export const salasInicio = {
             "L": () => "Caverna" as const,
             "SUBIR": async (ctx: Contexto) => {
                 let objetos = await ctx.getMochila();
-                const [ moedas ] = objetos.filter((o) => o.tipo === "Moedas");
+                const [ moedas ] = objetos.filter((o) => o.nome === "Moedas");
                 if(moedas && moedas.quantidade > 0) {
-                    await ctx.moverItem(moedas, moedas.quantidade, null);
+                    await ctx.moverItem(moedas, { quantidade: moedas.quantidade, ondeId: null });
                     ctx.escrevaln("Você sobe a escada e abre o alçapão... 'EI! onde você pegou essas moedas?' **PUFT!**");
                     ctx.escrevaln("...");
                     ctx.escrevaln("Onde eu estou? você não lembra porque está nesse porão.");
@@ -21,7 +21,7 @@ export const salasInicio = {
             }
         },
         itensIniciais: [{
-            tipo: "Pedra",
+            nome: "Pedra",
             quantidade: 1
         }]
     },
@@ -35,7 +35,7 @@ export const salasInicio = {
             "S": () => "Poço" as const,
             "L": async (ctx: Contexto) => {
                 let objetos = await ctx.getMochila();
-                const [ pedras ] = objetos.filter((o) => o.tipo === "Pedra");
+                const [ pedras ] = objetos.filter((o) => o.nome === "Pedra");
                 if(pedras && pedras.quantidade > 1) {
                     ctx.escrevaln("A ponte balança e você cai no Poço abaixo");
                     await ctx.moverParaSala("Poço");
@@ -56,7 +56,7 @@ export const salasInicio = {
             "N": () => "Caverna" as const
         },
         itensIniciais: [{
-            tipo: "Pedra",
+            nome: "Pedra",
             quantidade: 100
         }]
     },
@@ -79,24 +79,25 @@ export const salasInicio = {
                 }
 
                 let objetos = await ctx.getItensNoChao();
-                const [ pedras ] = objetos.filter((o) => o.tipo === "Pedra");
-                if(pedras) {
-                    if( pedras.quantidade === 2) {
-                        ctx.escrevaln("Você sobe nas pedras e alcança o baú, abrindo-o com facilidade");
-                        ctx.escrevaln("Você abre o baú e está cheio de moedas que "+
-                            "após uma análise minuciosa, você as identifica como fabricadas "+
-                            "por volta de 200 AC, com inscrições de Alexandre o Grande"
-                        );
-                        
-                        await ctx.criarItem({ tipo: "Moedas", quantidade: 100}, ctx.jogador);
-                        await ctx.alterarEstadoSala({ bauAberto: true });
-                    } else if (pedras.quantidade > 2) {
-                        ctx.escrevaln("Parece que tem pedras demais aqui, nem consegue ver o baú direito");
-                    } else {
-                        ctx.escrevaln("Você sobe na pedra mas ainda não alcança o baú");
-                    }
-                } else {
+                const [ pedras ] = objetos.filter((o) => o.nome === "Pedra");
+                if(!pedras) {
                     ctx.escrevaln("O baú está muito alto, você não consegue alcançá-lo, se tivesse algo para subir...");
+                    return;
+                }
+
+                if(pedras.quantidade === 2) {
+                    ctx.escrevaln("Você sobe nas pedras e alcança o baú, abrindo-o com facilidade");
+                    ctx.escrevaln("Você abre o baú e está cheio de moedas que "+
+                        "após uma análise minuciosa, você as identifica como fabricadas "+
+                        "por volta de 200 AC, com inscrições de Alexandre o Grande"
+                    );
+                    
+                    await ctx.criarItem({ nome: "Moedas", quantidade: 100, ondeId: ctx.jogador.id });
+                    await ctx.alterarEstadoSala({ bauAberto: true });
+                } else if (pedras.quantidade > 2) {
+                    ctx.escrevaln("Parece que tem pedras demais aqui, nem consegue ver o baú direito");
+                } else {
+                    ctx.escrevaln("Você sobe na pedra mas ainda não alcança o baú");
                 }
             },
             "FECHAR": async (ctx: Contexto) => {
@@ -107,14 +108,15 @@ export const salasInicio = {
                 }
 
                 let objetos = await ctx.getItensNoChao();
-                const [ pedras ] = objetos.filter((o) => o.tipo === "Pedra");
+                const [ pedras ] = objetos.filter((o) => o.nome === "Pedra");
                 if(!pedras || pedras.quantidade !== 2) {
                     ctx.escrevaln("Você não consegue alcançar o baú para fechá-lo");
+                    return;
                 }
 
                 ctx.escrevaln("Você sobe nas pedras e fecha o baú, mas aí você escorrega e as pedras caem em um poço");
                 await ctx.alterarEstadoSala({ bauAberto: false });
-                await ctx.moverItem(pedras, 2, null);
+                await ctx.moverItem(pedras, { quantidade: 2, ondeId: null });
             }
         },
         estadoInicial: {

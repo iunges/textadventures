@@ -16,7 +16,9 @@ export const mapArrayWithTable = <T extends PgTableWithColumns<any>>(table: T) =
 
             return value.map(v => {
                 if (typeof v !== "object" || v === null) {
-                    throw new Error("Invalid item in array");
+                    //throw new Error("Invalid item in array");
+                    console.warn("Invalid item in array:", v); 
+                    return v;
                 }
                 
                 const result: Record<string, unknown> = {};

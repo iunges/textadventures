@@ -1,6 +1,4 @@
 import { type RequestHandler } from "express";
-import { db } from "../db/drizzle.ts";
-import { tableUsers } from "../db/userSchema.ts";
 
 export const COOKIE_NAME = '__Secure-textadventures.session_token';
 export const COOKIE_OPTIONS = {

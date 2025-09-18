@@ -1,10 +1,10 @@
-import { type RequestHandler, type Express, type ErrorRequestHandler } from "express";
+import { type Express, type ErrorRequestHandler } from "express";
 import { getDocsRouter } from "./docsRoute.ts";
 import { logMiddleware } from "./logMiddleware.ts";
+import { COOKIE_NAME, COOKIE_OPTIONS, RevokeSessionError } from "../middlewares/authMiddleware.ts";
 import { getItemRouter } from "./itemRoute.ts";
 import { getSalaRouter } from "./salaRoute.ts";
 import { getAuthRouter } from "./authRoute.ts";
-import { COOKIE_NAME, COOKIE_OPTIONS, RevokeSessionError } from "../middlewares/authMiddleware.ts";
 
 const routes = (app: Express) => {
 	// Só fazer log das rotas se estiver em desenvolvimento, desativar em produção

@@ -2,18 +2,13 @@ import "dotenv/config";
 import { randomUUID } from "crypto";
 import { db } from "./drizzle.ts";
 import { type Sala, tableSalas } from "./salaSchema.ts";
-import { tableUsers } from "./userSchema.ts";
-import { tableEntidades } from "./entidadeSchema.ts";
 import { type Item, tableItens } from "./itemSchema.ts";
-import { salas, type SalaNome } from "../jogo/salas/salas.ts";
-import bcrypt from "bcryptjs";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import { ProcedureResetarItensChao } from "./procedures/resetarItensChao.ts";
+import { salas, type SalaNome } from "../jogo/config.ts";
 
 // Assume que acabou de dar drizzle kit push, então as tabelas estão criadas mas vazias
 // OU, se já tiver dados, não insere duplicados
 try {
-
     const insertSalas: typeof tableSalas.$inferInsert[] = [];
     const insertItens: typeof tableItens.$inferInsert[] = [];
     for(let [salaNome, sala] of Object.entries(salas)) {
@@ -34,7 +29,7 @@ try {
                 estado: sql`EXCLUDED.estado`,
                 atualizadoEm: sql`NOW()`,
             }
-        }).returning({ id: tableSalas.id, nome: tableSalas.nome, localId: tableSalas.localId });
+        }).returning({ id: tableSalas.id, nome: tableSalas.nome });
 
     for(let sala of todasAsSalas) {
         const configSala = salas[sala.nome as keyof typeof salas];
@@ -43,11 +38,12 @@ try {
         if(configSala.itensIniciais) {
             for(let item of configSala.itensIniciais) {
                 insertItens.push({
-                    id: randomUUID(),
-                    tipo: item.tipo,
+                    nome: item.nome,
+                    // A FAZER: lidar com pilhaId de acordo com o estado
+                    pilhaId: item.nome,
                     quantidade: item.quantidade,
                     quantidadeInicial: item.quantidade,
-                    ondeId: sala.localId,
+                    ondeId: sala.id,
                     estado: item.estadoInicial || {}
                 });
             }
@@ -59,8 +55,8 @@ try {
     // DELETE com join pegando os locais das salas
     const itensNoChao = db.select({ id: tableItens.id })
         .from(tableItens)
-        .innerJoin(tableSalas, eq(tableItens.ondeId, tableSalas.localId))
-        .where(isNotNull(tableSalas.localId));
+        .innerJoin(tableSalas, eq(tableItens.ondeId, tableSalas.id))
+        .where(isNotNull(tableSalas.id));
 
     await db.delete(tableItens).where(
         inArray(tableItens.id, itensNoChao)

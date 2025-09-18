@@ -3,7 +3,7 @@ import { tableEntidades } from "../db/entidadeSchema.ts";
 import { type Estado } from "../db/estadoSchema.ts";
 import { type DatabaseType } from "../db/drizzle.ts";
 import { tableSalas } from "../db/salaSchema.ts";
-import type { SalaNome } from "../jogo/salas/salas.ts";
+import type { SalaNome } from "../jogo/config.ts";
 
 export class EntidadeRepository {
     static async atualizar(db: DatabaseType, entidadeId: string, dados: { salaId?: string, estado?: Estado } ) {

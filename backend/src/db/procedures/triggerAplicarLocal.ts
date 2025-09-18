@@ -33,7 +33,7 @@ export class TriggerAplicarLocal {
 
                 -- 2. Atribui o ID capturado à coluna 'local_id' da linha que está sendo inserida.
                 --    (A variável NEW representa a linha que será inserida na tabela alvo, como 'salas' ou 'entidades')
-                NEW.local_id := novo_local_id;
+                NEW.id := novo_local_id;
 
                 -- 3. Retorna a linha modificada para que a operação de INSERT original possa continuar.
                 RETURN NEW;
@@ -55,15 +55,11 @@ export class TriggerAplicarLocal {
             FOR EACH ROW EXECUTE FUNCTION criar_local_automatico();
         `));
 
-        /*
-        Deixar para depois... tem que ver isso ainda
+        //Deixar para depois... tem que ver isso ainda (WHEN (NEW.pode_ser_container = TRUE))
         console.log(await db.execute(sql`
-            CREATE TRIGGER trigger_criar_local_para_item
+            CREATE OR REPLACE TRIGGER trigger_criar_local_para_item
             BEFORE INSERT ON public.itens
-            FOR EACH ROW 
-            WHEN (NEW.pode_ser_container = TRUE)
-            EXECUTE FUNCTION criar_local_automatico();
+            FOR EACH ROW EXECUTE FUNCTION criar_local_automatico();
         `));
-        */
     }
 }
