@@ -6,11 +6,10 @@ export const respostaSituacao = z.object({
     }),
     jogador: z.object({
         id: z.string().meta({ example: "Inicio" }),
-        localId: z.uuid().meta({ example: "UUID" }),
         username: z.string().meta({
             example: "usuario123",
         }),
-        salaId: z.string().meta({
+        ondeId: z.string().meta({
             example: "Inicio",
         }),
         atualizadoEm: z.iso.datetime().meta({ example: "2023-10-05T14:48:00.000Z" }),
@@ -23,7 +22,6 @@ export const respostaSituacao = z.object({
     }),
     sala: z.object({
         id: z.string().meta({ example: "Inicio" }),
-        localId: z.uuid().meta({ example: "UUID" }),
         atualizadoEm: z.iso.datetime().meta({ example: "2023-10-05T14:48:00.000Z" }),
         itens: z.array(z.object({
             id: z.uuid().meta({ example: "UUID" }),
@@ -33,7 +31,6 @@ export const respostaSituacao = z.object({
         })).optional(),
         entidades: z.array(z.object({
             id: z.uuid().meta({ example: "UUID" }),
-            localId: z.uuid().meta({ example: "UUID" }),
             categoria: z.string().meta({ example: "JOGADOR" }),
             tipo: z.string().meta({ example: "JOGADOR" }),
             username: z.string().meta({ example: "usuario123" }),

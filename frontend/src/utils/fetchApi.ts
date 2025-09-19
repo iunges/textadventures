@@ -119,7 +119,7 @@ export type RespostaSituacao = {
     jogador: {
         id: string;
         username: string;
-        salaId: string;
+        ondeId: string;
         mochila?: RespostaItens[] | null;
         atualizadoEm: string;
     };

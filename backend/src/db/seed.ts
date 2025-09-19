@@ -16,7 +16,7 @@ try {
         insertSalas.push({
             id: salaUUID,
             nome: salaNome as SalaNome,
-            estado: sala.estadoInicial || {}
+            estado: sala.estadoInicial
         });
     }
 
@@ -44,7 +44,7 @@ try {
                     quantidade: item.quantidade,
                     quantidadeInicial: item.quantidade,
                     ondeId: sala.id,
-                    estado: item.estadoInicial || {}
+                    estado: item.estadoInicial
                 });
             }
         }

@@ -3,17 +3,17 @@ import { db } from "../db/drizzle.ts";
 import { getItemConfig, getSalaConfig, type ItemTipo, type SalaNome } from "./config.ts";
 
 import { type Entidade } from "../db/entidadeSchema.ts";
-import { type Estado } from "../db/estadoSchema.ts";
 import { type Item } from "../db/itemSchema.ts";
 import { type Sala } from "../db/salaSchema.ts";
 import { EntidadeRepository } from "../repositories/entidadeRepository.ts";
 import { ItemRepository } from "../repositories/itemRepository.ts";
 import { SalaRepository } from "../repositories/salaRepository.ts";
+import type { Estado } from "./types.ts";
+import { UUID_ZERO } from "../db/utils.ts";
 
 // Serve como service que interage com o banco de dados, e guarda o estado atual do jogo
 export class Contexto {
     jogador: Entidade;
-    private _salvarJogador: boolean = false;
 
     mochila: Item[] | null = null;
     async getMochila() {
@@ -32,24 +32,22 @@ export class Contexto {
         return this.itensNoChao;
     }
 
-    entidadesNaSala: Entidade[] | null = null;
+    entidadesNaSala: (Entidade & {mochila: Item[]})[] | null = null;
     async getEntidadesNaSala() {
         if(this.entidadesNaSala) return this.entidadesNaSala;
 
         const sala = await this.getSala();
-        this.entidadesNaSala = await EntidadeRepository.naSala(db, sala.id);
+        this.entidadesNaSala = (await EntidadeRepository.naSala(db, sala.id)).filter(e => e.id !== this.jogador.id);
         return this.entidadesNaSala;
     }
 
     global: Sala;
-    private _salvarGlobal: boolean = false;
 
     sala: Sala | null;
-    private _salvarSala: boolean = false;
     async getSala() {
         if(this.sala) return this.sala;
         
-        this.sala = await SalaRepository.getSalaById(db, this.jogador.salaId);
+        this.sala = await SalaRepository.getSalaById(db, this.jogador.ondeId);
         if (!this.sala) {
             throw new Error("Sala para onde o jogador tentou ir não existe!");
         }
@@ -65,7 +63,7 @@ export class Contexto {
         global: Sala,
         itensNoChao: Item[] | null,
         mochila: Item[] | null,
-        entidadesNaSala: Entidade[] | null,
+        entidadesNaSala: (Entidade & {mochila: Item[]})[] | null,
     }) {
         this.jogador = jogador;
         this.global = global;
@@ -85,7 +83,7 @@ export class Contexto {
         const descricaoItens = [];
         for(let item of itens) {
             const itemConfig = getItemConfig(item.nome as ItemTipo);
-            const descr = await itemConfig.descricao(ctx);
+            const descr = await itemConfig.descricao(ctx, item);
             if(descr) {
                 ctx.escrevaln(descr);
             }
@@ -106,7 +104,34 @@ export class Contexto {
 
         const resposta = this.obterTexto();
 
-        const descr = await salaConfig.descricao(this);
+        const temLuz = await this.temLuz();
+        if(!temLuz) {
+            this.escrevaln("Está muito escuro, você não consegue ver nada.");
+            const descricaoSala = this.obterTexto();
+            const descricaoMochila = await Contexto._descricaoItens(this, await this.getMochila());
+
+            return {
+                resposta: resposta,
+                jogador: {
+                    id: this.jogador.id,
+                    username: this.jogador.username,
+                    ondeId: this.jogador.ondeId,                
+                    atualizadoEm: this.jogador.atualizadoEm,
+                    mochila: descricaoMochila,
+                },
+                sala: {
+                    id: sala.id,
+                    nome: sala.nome,
+                    atualizadoEm: sala.atualizadoEm,
+                    conexoes: [],
+                    descricao: descricaoSala,
+                    itens: [],
+                    entidades: [],
+                }
+            };
+        }
+        
+        const descr = await salaConfig.descricao(this, sala);
         if(descr) {
             this.escrevaln(descr);
         }
@@ -128,7 +153,7 @@ export class Contexto {
             jogador: {
                 id: this.jogador.id,
                 username: this.jogador.username,
-                salaId: this.jogador.salaId,                
+                ondeId: this.jogador.ondeId,                
                 atualizadoEm: this.jogador.atualizadoEm,
                 mochila: descricaoMochila,
             },
@@ -144,24 +169,41 @@ export class Contexto {
         };
     }
 
+    async temLuz(): Promise<boolean> {
+        const sala = await this.getSala();
+        if(sala.estado?.luz === true) return true;
+
+        let chao = await this.getItensNoChao();
+        for(let obj of chao) {
+            if(obj.estado?.luz === true) return true;
+        }
+
+        let mochila = await this.getMochila();
+        for(let obj of mochila) {
+            if(obj.estado?.luz === true) return true;
+        }
+
+        let entidades = await this.getEntidadesNaSala();
+        for(let ent of entidades) {
+            if(ent.estado?.luz === true) return true;
+            for(let obj of ent.mochila) {
+                if(obj.estado?.luz === true) return true;
+            }
+        }
+
+        return false;
+    }
+
     // =========================================================================
     //                 Funções que alteram o estado do jogo  
     // =========================================================================
     async moverParaSala(novaSalaNome: SalaNome) {
-        if(this._salvarJogador || (this.sala && this._salvarSala)) {
-            throw new Error("Deve salvar antes!");
-        }
-
         const { entidade, sala } = (await EntidadeRepository.moveParaSalaNome(db, this.jogador.id, novaSalaNome)) || {};
         if(!entidade || !sala) {
             throw new Error("Erro ao mover para a sala " + novaSalaNome);
         }
-
         this.jogador = entidade;
-        this._salvarJogador = false;
-
         this.sala = sala;
-        this._salvarSala = false;
 
         this.entidadesNaSala = null;
         this.itensNoChao = null;
@@ -170,7 +212,7 @@ export class Contexto {
     async moverItem(item: Item, { quantidade, ondeId, estado }: { 
         quantidade: number,
         ondeId: string | null,
-        estado?: Estado,
+        estado?: Estado | null,
     }) {
         if(ondeId === null) {
             // Descarta o item
@@ -178,6 +220,9 @@ export class Contexto {
         } else {
             // Move o item para outro lugar
             // A FAZER: lidar com pilhaId quando mudar o estado
+            if(estado) {
+                estado = { ...(item.estado || {}), ...estado };
+            }
             await ItemRepository.moverItem(db, item.id, { quantidade, ondeId, pilhaId: item.nome, estado });
         }
 
@@ -185,12 +230,12 @@ export class Contexto {
         this.itensNoChao = null;
     }
 
-    async criarItem(item: { nome: ItemTipo, estado?: Estado, quantidade: number, ondeId: string }) {
+    async criarItem(item: { nome: ItemTipo, estado?: Estado | null, quantidade: number, ondeId: string }) {
         await ItemRepository.adicionarItem(db, {
             nome: item.nome,
             pilhaId: item.nome, // A FAZER: lidar com pilhaId ligado ao estado
             quantidade: item.quantidade,
-            estado: item.estado || {},
+            estado: item.estado,
             ondeId: item.ondeId,
         });
 
@@ -198,33 +243,17 @@ export class Contexto {
         this.itensNoChao = null;
     }
 
-    async alterarEstadoSala(novoEstado: Estado) {
+    async alterarEstadoSala(novoEstado: Estado | null) {
         const sala = await this.getSala();
 
-        sala.estado = { ...sala.estado, ...novoEstado };
-        this._salvarSala = true;
+        if(novoEstado) {
+            sala.estado = { ...(sala.estado || {}), ...novoEstado };
+        } else {
+            sala.estado = null;
+        }
+        await SalaRepository.atualizar(db, sala.id, { estado: sala.estado });
     }
-
-    async salvar() {
-        if(this._salvarJogador) {
-            await EntidadeRepository.atualizar(db, this.jogador.id, { 
-                salaId: this.jogador.salaId,
-                estado: this.jogador.estado
-            });
-            this._salvarJogador = false;
-        }
-
-        if(this._salvarSala && this.sala) {
-            await SalaRepository.atualizar(db, this.sala.id, { estado: this.sala.estado });
-            this._salvarSala = false;
-        }
-
-        if(this._salvarGlobal) {
-            await SalaRepository.atualizar(db, this.global.id, { estado: this.global.estado });
-            this._salvarGlobal = false;
-        }
-    }
-
+    
     // =========================================================================
     //                 Funções para escrever na resposta  
     // =========================================================================

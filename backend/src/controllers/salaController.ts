@@ -13,12 +13,13 @@ export class SalaController extends ControllerBase {
     static moverParaDirecao: RequestHandler<{ direcao: string }> = async (req, res) => {
         const { ctx, body } = await this.loadRequest(salaDocs["/sala/mover"].post.schema, req, res);
 
-        const salaConfig = getSalaConfig((await ctx.getSala()).nome as SalaNome);
+        const sala = await ctx.getSala();
+        const salaConfig = getSalaConfig(sala.nome as SalaNome);
         const conexao = body.direcao in salaConfig.conexoes && salaConfig.conexoes[body.direcao];
         if(!conexao) {
             ctx.escrevaln("Você não pode fazer isso.");
         } else {
-            const novaSalaNome = await conexao(ctx);
+            const novaSalaNome = await conexao(ctx, sala);
             if(novaSalaNome) {
                 await ctx.moverParaSala(novaSalaNome);
             }

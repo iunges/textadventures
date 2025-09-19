@@ -1,79 +1,171 @@
+import type { SalaInfo } from "../types.ts";
 import { Contexto } from "../contexto.ts";
 
 export const salasInicio = {
     Inicio: {
-        descricao: () => `Você está em um corredor do porão de uma casa antiga, 
-        Ao leste há uma abertura na parede, e para cima tem uma escada com um alçapão que leva para fora
-        `,
+        descricao: async (ctx: Contexto) => {
+            ctx.escrevaln("Você acorda em uma sala sem janelas (subsolo?), você não sabe porquê está aqui. Ao leste há uma passagem");
+        },
         conexoes: {
-            "L": () => "Caverna" as const,
-            "SUBIR": async (ctx: Contexto) => {
-                let objetos = await ctx.getMochila();
-                const [ moedas ] = objetos.filter((o) => o.nome === "Moedas");
-                if(moedas && moedas.quantidade > 0) {
-                    await ctx.moverItem(moedas, { quantidade: moedas.quantidade, ondeId: null });
-                    ctx.escrevaln("Você sobe a escada e abre o alçapão... 'EI! onde você pegou essas moedas?' **PUFT!**");
-                    ctx.escrevaln("...");
-                    ctx.escrevaln("Onde eu estou? você não lembra porque está nesse porão.");
-                } else {
-                    ctx.escrevaln("Você sobe a escada e bate no alçapão... mas ele está trancado.");
-                }
+            "L": () => "Labirinto1" as const,
+        },
+        itensIniciais: [{
+            nome: "Lampiao",
+            quantidade: 1,
+            estadoInicial: {
+                luz: true
             }
+        }],
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto1: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "O": () => "Labirinto1" as const,
+            "L": () => "Labirinto2" as const,
+            "S": () => "Labirinto4" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto2: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "O": () => "Inicio" as const,
+            "S": () => "Labirinto5" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto3: {
+        descricao: () => "Você achou uma sala com uma rachadura no teto, onde há alguns galhos e luz do sol, há uma corda que desce em um poço",
+        conexoes: {
+            "N": () => "Labirinto3" as const,
+            "S": () => "Labirinto6" as const,
+            "DESCER": () => "Poço" as const,
+        },
+        estadoInicial: {
+            luz: true
+        }
+    },
+    Labirinto4: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "N": () => "Labirinto1" as const,
+            "O": () => "Labirinto7" as const,
+            "L": () => "Labirinto5" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto5: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "N": () => "Labirinto2" as const,
+            "O": () => "Labirinto4" as const,
+            "L": () => "Labirinto6" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto6: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "N": () => "Labirinto3" as const,
+            "O": () => "Labirinto5" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto7: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "N": () => "Labirinto7" as const,
+            "O": () => "Labirinto4" as const,
+            "L": () => "Labirinto8" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto8: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "N": () => "Labirinto5" as const,
+            "O": () => "Labirinto7" as const,
+            "L": () => "Labirinto9" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Labirinto9: {
+        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        conexoes: {
+            "N": () => "Labirinto6" as const,
+            "O": () => "Labirinto8" as const,
+            "S": () => "Caverna" as const
+        },
+        estadoInicial: {
+            luz: false
+        }
+    },
+    Poço: {
+        descricao: () => "Este é um poço no fundo da caverna, para subir há uma corda",
+        conexoes: {
+            "SUBIR": () => "Labirinto3" as const
         },
         itensIniciais: [{
             nome: "Pedra",
-            quantidade: 1
-        }]
+            quantidade: 5
+        }],
+        estadoInicial: {
+            luz: false
+        }
     },
     Caverna: {
         descricao: () => `Você está em uma caverna escura,
         Há uma ponte de cordas ao leste, parece bem frágil, O que será que tem lá?
-        Ao sul há uma escada descendo na escuridão
         `,
         conexoes: {
-            "O": () => "Inicio" as const,
-            "S": () => "Poço" as const,
+            "O": () => "Labirinto9" as const,
             "L": async (ctx: Contexto) => {
                 let objetos = await ctx.getMochila();
                 const [ pedras ] = objetos.filter((o) => o.nome === "Pedra");
                 if(pedras && pedras.quantidade > 1) {
-                    ctx.escrevaln("A ponte balança e você cai no Poço abaixo");
+                    ctx.escrevaln("Seu peso faz a ponte balança e você cai no Poço abaixo");
                     await ctx.moverParaSala("Poço");
                 } else {
-                    if(Math.random() > 0.5) {
-                        ctx.escrevaln("A ponte balança e você cai no Poço abaixo");
-                        await ctx.moverParaSala("Poço");
-                    } else {
-                        await ctx.moverParaSala("Tesouro");
-                    }
+                    await ctx.moverParaSala("Tesouro");
                 }
             },
+        },
+        estadoInicial: {
+            luz: false
         }
     },
-    Poço: {
-        descricao: () => "Este é um poço no fundo da caverna, acima há uma escada de cordas",
-        conexoes: {
-            "N": () => "Caverna" as const
-        },
-        itensIniciais: [{
-            nome: "Pedra",
-            quantidade: 100
-        }]
-    },
     Tesouro: {
-        descricao: async (ctx: Contexto) => {
-            const estado = (await ctx.getSala()).estado;
-            if(estado.bauAberto) {
+        descricao: async (ctx: Contexto, info: SalaInfo) => {
+            if(info.estado?.bauAberto) {
                 ctx.escrevaln("Você está em uma sala de pedra decorada com um baú aberto no centro, sem nada dentro");
             } else {
                 ctx.escrevaln("Você está em uma sala de pedra decorada com um baú fechado no centro");
             }
         },
         conexoes: {
-            "O": () => "Caverna" as const,
-            "ABRIR": async (ctx: Contexto) => {
-                const estado = (await ctx.getSala()).estado;
-                if(estado.bauAberto) {
+            "O": (ctx: Contexto) => {
+                ctx.escrevaln("Você escorrega e cai no poço abaixo");
+                return "Poço" as const;
+            },
+            "ABRIR": async (ctx: Contexto, info: SalaInfo) => {
+                if(info.estado?.bauAberto) {
                     ctx.escrevaln("O baú já está aberto, sem nada dentro");
                     return;
                 }
@@ -100,9 +192,8 @@ export const salasInicio = {
                     ctx.escrevaln("Você sobe na pedra mas ainda não alcança o baú");
                 }
             },
-            "FECHAR": async (ctx: Contexto) => {
-                const estado = (await ctx.getSala()).estado;
-                if(!estado.bauAberto) {
+            "FECHAR": async (ctx: Contexto, info: SalaInfo) => {
+                if(!info.estado?.bauAberto) {
                     ctx.escrevaln("O baú já está fechado");
                     return;
                 }
@@ -120,7 +211,8 @@ export const salasInicio = {
             }
         },
         estadoInicial: {
-            bauAberto: false
+            bauAberto: false,
+            luz: false
         }
     },
 } as const;

@@ -1,10 +1,10 @@
 import { pgTable, uuid, varchar, jsonb, check, type AnyPgColumn, timestamp, integer, uniqueIndex, pgEnum, char, index } from 'drizzle-orm/pg-core';
-import { type Estado, type EstadoItem } from './estadoSchema.ts';
 import { getTupleFromKeys, UUID_ZERO } from './utils.ts';
 import { relations } from 'drizzle-orm';
 import { tableEntidades } from './entidadeSchema.ts';
 import { tableSalas } from './salaSchema.ts';
 import { itens } from '../jogo/config.ts';
+import type { Estado } from '../jogo/types.ts';
 
 export const enumItemNome = pgEnum('item_nome', getTupleFromKeys(itens));
 
@@ -13,8 +13,7 @@ export const tableLocais = pgTable('locais', {
 });
 
 export const tableItens = pgTable('itens', {
-    // Referência para o local para itens associado a esta item (para agir como container), criado pela trigger criar_local_automatico.
-    id: uuid('id').primaryKey().references(() => tableLocais.id, { onDelete: 'restrict' }).$defaultFn(() => UUID_ZERO),
+    id: uuid('id').primaryKey().defaultRandom(),
 
     // Que item é esse (ex: "espada", "pocao", "chave")
     nome: enumItemNome('nome').notNull(),
@@ -28,15 +27,15 @@ export const tableItens = pgTable('itens', {
     // Quando é um item inicial (spawn) de uma sala. valor que será restaurado.
     quantidadeInicial: integer('quantidade_inicial'),
     
-    // Onde o item está atualmente
-    ondeId: uuid('onde_id').references(() => tableLocais.id, { onDelete: 'restrict' }).notNull(),
+    // Onde o item está atualmente, se onde ele está for deletado, o item também será deletado (onDelete cascade)
+    ondeId: uuid('onde_id').references(() => tableLocais.id, { onDelete: 'cascade' }).notNull(),
 
     criadoEm: timestamp('criado_em', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
     atualizadoEm: timestamp('atualizado_em', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
 
     // Atributos dinâmicos: durabilidade, cargas, etc.
     // Ex: { "durabilidade": 82 }
-    estado: jsonb('estado').$type<Estado>().default({}).notNull(),
+    estado: jsonb('estado').$type<Estado>(),
 },
     (table) => [
         // Garante que não vai duplicar pilhas de itens no mesmo local

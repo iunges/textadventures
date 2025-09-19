@@ -4,5 +4,11 @@ export const itensInicio = {
     },
     Moedas: {
         descricao: () => "Moedas antigas, parecem ser de ouro maciço.",
-    }
+    },
+    Lampiao: {
+        descricao: () => "Um lampião antigo",
+        estadoInicial: {
+            luz: true
+        }
+    },
 } as const;

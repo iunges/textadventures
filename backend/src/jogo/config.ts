@@ -1,7 +1,7 @@
-import type { Estado } from "../db/estadoSchema.ts";
 import type { Contexto } from "./contexto.ts";
 import { itensInicio } from "./itens/inicio.ts";
 import { salasInicio } from "./salas/inicio.ts";
+import type { Estado, ItemInfo, SalaInfo } from "./types.ts";
 
 const _itens = {
     ...itensInicio,
@@ -17,7 +17,7 @@ const _salas = {
 } as const;
 
 export type ItemType<ITEM = string> = {
-    descricao: (ctx: Contexto) => void | string | Promise<string | void>;
+    descricao: (ctx: Contexto, info: ItemInfo) => void | string | Promise<string | void>;
     itensIniciais?: {
         nome: ITEM;
         quantidade: number;
@@ -26,9 +26,9 @@ export type ItemType<ITEM = string> = {
 };
 
 export type SalaType<SALA = string, ITEM = string> = {
-    descricao: (ctx: Contexto) => void | string | Promise<string | void>;
+    descricao: (ctx: Contexto, info: SalaInfo) => void | string | Promise<string | void>;
     conexoes: { 
-        [direcao: string]: (ctx: Contexto) => void | SALA | Promise<SALA | void>;
+        [direcao: string]: (ctx: Contexto, info: SalaInfo) => void | SALA | Promise<SALA | void>;
     };
     itensIniciais?: readonly {
         nome: ITEM;

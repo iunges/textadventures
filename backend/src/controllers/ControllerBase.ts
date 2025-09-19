@@ -30,8 +30,7 @@ export class ControllerBase {
 
     static async sendResponse(ctx: Contexto, req: Request, res: Response) {
         const result = await ctx.retornarSituacao();
-        await ctx.salvar();
-
+        
         res.status(200).json(result);
     }
 }

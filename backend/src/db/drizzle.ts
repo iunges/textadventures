@@ -17,7 +17,7 @@ const client = postgres(connectionString, { prepare: false });
 export const db = drizzle({
     client,
     schema: schema,
-    // logger: process.env.DEBUGLOG === "true" ? true : false,
+    //logger: process.env.DEBUGLOG === "true" ? true : false,
 });
 
 // await db.execute(sql`SET TIME ZONE 'UTC';`).then(() => {
