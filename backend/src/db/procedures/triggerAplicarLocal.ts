@@ -22,6 +22,9 @@ export class TriggerAplicarLocal {
     Tudo isso acontece de forma atômica, dentro de uma única transação.
     */
     static async create(db: DatabaseType) {
+        // -----------------------------------------
+        // Trigger para criar local automaticamente
+        // -----------------------------------------
         console.log(await db.execute(sql`
             CREATE OR REPLACE FUNCTION criar_local_automatico()
             RETURNS TRIGGER AS $$
@@ -41,25 +44,37 @@ export class TriggerAplicarLocal {
             $$ LANGUAGE plpgsql;
         `));
 
+        // -----------------------------------------
+        // Trigger para deletar local automaticamente 
+        // (Reverse onDelete Cascade)
+        // -----------------------------------------
+        await db.execute(sql`
+            CREATE OR REPLACE FUNCTION deletar_local_automatico()
+            RETURNS TRIGGER AS $$
+            DECLARE
+                item_count INTEGER;
+            BEGIN
+                -- A fk vai fazer o Delete dos itens se tiver nesse local
+                DELETE FROM public.locais WHERE id = OLD.id;
+
+                RETURN OLD;
+            END;
+            $$ LANGUAGE plpgsql;
+        `);
 
         // Aplicar a trigger em cada tabela.
-        console.log(await db.execute(sql`
-            CREATE OR REPLACE TRIGGER trigger_criar_local_para_sala
-            BEFORE INSERT ON public.salas
-            FOR EACH ROW EXECUTE FUNCTION criar_local_automatico();
-        `));
+        for (const tabela of ['salas', 'entidades']) {
+            console.log(await db.execute(sql.raw(`
+                CREATE OR REPLACE TRIGGER trigger_criar_local_para_${tabela}
+                BEFORE INSERT ON public.${tabela}
+                FOR EACH ROW EXECUTE FUNCTION criar_local_automatico();
+            `)));
 
-        console.log(await db.execute(sql`
-            CREATE OR REPLACE TRIGGER trigger_criar_local_para_entidade
-            BEFORE INSERT ON public.entidades
-            FOR EACH ROW EXECUTE FUNCTION criar_local_automatico();
-        `));
-
-        //Deixar para depois... tem que ver isso ainda (WHEN (NEW.pode_ser_container = TRUE))
-        console.log(await db.execute(sql`
-            CREATE OR REPLACE TRIGGER trigger_criar_local_para_item
-            BEFORE INSERT ON public.itens
-            FOR EACH ROW EXECUTE FUNCTION criar_local_automatico();
-        `));
+            console.log(await db.execute(sql.raw(`
+                CREATE OR REPLACE TRIGGER trigger_deletar_local_para_${tabela}
+                AFTER DELETE ON public.${tabela}
+                FOR EACH ROW EXECUTE FUNCTION deletar_local_automatico();
+            `)));
+        }
     }
 }

@@ -1,8 +1,8 @@
 import { and, eq, gte, sql } from "drizzle-orm";
 import { type Item, tableItens } from "../db/itemSchema.ts";
 import { type DatabaseType } from "../db/drizzle.ts";
-import type { Estado } from "../db/estadoSchema.ts";
 import type { ItemTipo } from "../jogo/config.ts";
+import type { Estado } from "../jogo/types.ts";
 
 export class ItemRepository {
     static async listarPorLocal(db: DatabaseType, localId: string): Promise<Item[]> {
@@ -19,7 +19,7 @@ export class ItemRepository {
         quantidade: number, 
         ondeId?: string, 
         pilhaId?: string, 
-        estado?: Estado
+        estado?: Estado | null
     }) {
         return await db.transaction(async (tx: any) => {
             // 1. Retira o item de onde ele está agora (Não tem problema deixar 0 itens)
@@ -32,7 +32,7 @@ export class ItemRepository {
                 criadoEm: itemAtual.criadoEm,
                 ondeId: diff.ondeId ? diff.ondeId : itemAtual.ondeId,
                 pilhaId: diff.pilhaId ? diff.pilhaId : itemAtual.pilhaId,
-                estado: diff.estado ? diff.estado : itemAtual.estado,
+                estado: diff.estado !== undefined ? diff.estado : itemAtual.estado,
             });
         });
     }
@@ -53,7 +53,7 @@ export class ItemRepository {
     static async adicionarItem(db: DatabaseType, itemAtual: {
         nome: ItemTipo,
         pilhaId: string,
-        estado?: Estado,
+        estado?: Estado | null,
         criadoEm?: Date,
         quantidade: number,
         ondeId: string
@@ -63,7 +63,7 @@ export class ItemRepository {
             pilhaId: itemAtual.pilhaId,
             quantidade: itemAtual.quantidade,
             ondeId: itemAtual.ondeId,
-            estado: itemAtual.estado,
+            estado: itemAtual.estado && Object.keys(itemAtual.estado).length > 0 ? itemAtual.estado : null,
             criadoEm: sql<Date>`NOW()`,
             atualizadoEm: sql<Date>`NOW()`,
         }).onConflictDoUpdate({

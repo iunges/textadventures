@@ -29,7 +29,7 @@ export class UserRepository {
                 username: dados.username,
                 categoria: "JOGADOR",
                 tipo: "JOGADOR",
-                salaId: salaInicial.id,
+                ondeId: salaInicial.id,
                 estado: { vivo: 1 },
                 criadoEm: sql<Date>`NOW()`,
                 atualizadoEm: sql<Date>`NOW()`,

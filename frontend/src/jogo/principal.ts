@@ -65,8 +65,6 @@ function descreverTudo(situacao: RespostaSituacao, situacaoAnterior?: RespostaSi
             for(let conexao of sala.conexoes) {
                 termPrint(`  ${conexao}`);
             }
-        } else {
-            termPrint("não há nenhuma direção para ir daqui.");
         }
     }
 
