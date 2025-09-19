@@ -1,6 +1,6 @@
 import { type RequestHandler } from "express";
 import { salaDocs } from "../docs/salaDocs.ts";
-import { getSalaConfig, type SalaNome } from "../jogo/config.ts";
+import { execCallbackOrValue, getSalaConfig, type SalaNome } from "../jogo/config.ts";
 import { ControllerBase } from "./ControllerBase.ts";
 
 export class SalaController extends ControllerBase {
@@ -15,11 +15,11 @@ export class SalaController extends ControllerBase {
 
         const sala = await ctx.getSala();
         const salaConfig = getSalaConfig(sala.nome as SalaNome);
-        const conexao = body.direcao in salaConfig.conexoes && salaConfig.conexoes[body.direcao];
-        if(!conexao) {
+        const conexoes = await execCallbackOrValue(salaConfig.conexoes, ctx, sala);
+        if(!(body.direcao in conexoes)) {
             ctx.escrevaln("Você não pode fazer isso.");
         } else {
-            const novaSalaNome = await conexao(ctx, sala);
+            const novaSalaNome = await execCallbackOrValue(conexoes[body.direcao], ctx, sala);
             if(novaSalaNome) {
                 await ctx.moverParaSala(novaSalaNome);
             }

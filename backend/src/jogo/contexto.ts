@@ -1,6 +1,6 @@
 // Contexto do jogo a ser usado nas funções das salas e comandos
 import { db } from "../db/drizzle.ts";
-import { getItemConfig, getSalaConfig, type ItemTipo, type SalaNome } from "./config.ts";
+import { execCallbackOrValue, gerarPilhaId, getItemConfig, getSalaConfig, type ItemTipo, type SalaNome } from "./config.ts";
 
 import { type Entidade } from "../db/entidadeSchema.ts";
 import { type Item } from "../db/itemSchema.ts";
@@ -24,12 +24,20 @@ export class Contexto {
     }
 
     itensNoChao: Item[] | null = null;
-    async getItensNoChao() {
-        if(this.itensNoChao) return this.itensNoChao;
+    async getItensNoChao(nome?: SalaNome) {
+        if(!nome) {
+            if(this.itensNoChao) return this.itensNoChao;
 
-        const sala = await this.getSala();
-        this.itensNoChao = await ItemRepository.listarPorLocal(db, sala.id);
-        return this.itensNoChao;
+            const sala = await this.getSala();
+            this.itensNoChao = await ItemRepository.listarPorLocal(db, sala.id);
+            return this.itensNoChao;
+        } else {
+            const sala = await SalaRepository.getSalaByNome(db, nome);
+            if (!sala) {
+                throw new Error("Sala não existe! "+ nome);
+            }
+            return await ItemRepository.listarPorLocal(db, sala.id);
+        }
     }
 
     entidadesNaSala: (Entidade & {mochila: Item[]})[] | null = null;
@@ -83,16 +91,17 @@ export class Contexto {
         const descricaoItens = [];
         for(let item of itens) {
             const itemConfig = getItemConfig(item.nome as ItemTipo);
-            const descr = await itemConfig.descricao(ctx, item);
+            const descr = await execCallbackOrValue(itemConfig.descricao, ctx, item);
             if(descr) {
                 ctx.escrevaln(descr);
             }
+            const descricaoItem = ctx.obterTexto();
             descricaoItens.push({
                 id: item.id,
                 nome: item.nome,
                 quantidade: item.quantidade,
                 atualizadoEm: item.atualizadoEm,
-                descricao: ctx.obterTexto(),
+                descricao: descricaoItem,
             });
         }
         return descricaoItens;
@@ -131,11 +140,13 @@ export class Contexto {
             };
         }
         
-        const descr = await salaConfig.descricao(this, sala);
+        const descr = await execCallbackOrValue(salaConfig.descricao, this, sala);
         if(descr) {
             this.escrevaln(descr);
         }
         const descricaoSala = this.obterTexto();
+
+        const conexoes = await execCallbackOrValue(salaConfig.conexoes, this, sala);
 
         const descricaoItensNochao = await Contexto._descricaoItens(this, await this.getItensNoChao());
         const descricaoMochila = await Contexto._descricaoItens(this, await this.getMochila());
@@ -161,7 +172,7 @@ export class Contexto {
                 id: sala.id,
                 nome: sala.nome,
                 atualizadoEm: sala.atualizadoEm,
-                conexoes: Object.keys(salaConfig.conexoes),
+                conexoes: Object.keys(conexoes),
                 descricao: descricaoSala,
                 itens: descricaoItensNochao,
                 entidades: descricaoEntidades,
@@ -219,11 +230,12 @@ export class Contexto {
             await ItemRepository.removerItem(db, item.id, quantidade);
         } else {
             // Move o item para outro lugar
-            // A FAZER: lidar com pilhaId quando mudar o estado
             if(estado) {
                 estado = { ...(item.estado || {}), ...estado };
+            } else {
+                estado = item.estado;
             }
-            await ItemRepository.moverItem(db, item.id, { quantidade, ondeId, pilhaId: item.nome, estado });
+            await ItemRepository.moverItem(db, item.id, { quantidade, ondeId, pilhaId: gerarPilhaId(item.nome, estado), estado });
         }
 
         this.mochila = null;
@@ -233,7 +245,7 @@ export class Contexto {
     async criarItem(item: { nome: ItemTipo, estado?: Estado | null, quantidade: number, ondeId: string }) {
         await ItemRepository.adicionarItem(db, {
             nome: item.nome,
-            pilhaId: item.nome, // A FAZER: lidar com pilhaId ligado ao estado
+            pilhaId: gerarPilhaId(item.nome, item.estado),
             quantidade: item.quantidade,
             estado: item.estado,
             ondeId: item.ondeId,

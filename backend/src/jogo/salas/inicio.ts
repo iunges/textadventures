@@ -2,30 +2,72 @@ import type { SalaInfo } from "../types.ts";
 import { Contexto } from "../contexto.ts";
 
 export const salasInicio = {
-    Inicio: {
-        descricao: async (ctx: Contexto) => {
-            ctx.escrevaln("Você acorda em uma sala sem janelas (subsolo?), você não sabe porquê está aqui. Ao leste há uma passagem");
+    Quarto: {
+        descricao: (ctx: Contexto) => {
+            ctx.escrevaln("Você está em um quarto simples sem janelas, na parede há vários riscos 一 二 三, há uma cama, uma mesa com um candelabro e uma porta ao sul");
         },
         conexoes: {
-            "L": () => "Labirinto1" as const,
+            "S": "Inicio",
+            "DORMIR": (ctx: Contexto) => {
+                ctx.escrevaln("Você deita na cama e dorme por um tempo, mas nada mudou quando acorda.");
+            },
+            "ACENDER": async (ctx: Contexto) => {
+                let objetos = await ctx.getMochila();
+                const [ lampiao ] = objetos.filter((o) => o.nome === "Lampiao");
+                if(!lampiao) {
+                    ctx.escrevaln("Você não tem nada para acender aqui.");
+                    return;
+                }
+
+                if(lampiao.estado?.luz) {
+                    ctx.escrevaln("O lampião já está aceso.");
+                    return;
+                }
+
+                await ctx.moverItem(lampiao, { ondeId: lampiao.ondeId, quantidade: 1, estado: { luz: true } });
+                ctx.escrevaln("Você acende o lampião.");
+            }
+        },
+        itensIniciais: [{
+            nome: "Papel",
+            quantidade: 3
+        },{
+            nome: "Papel",
+            quantidade: 1,
+            estadoInicial: {
+                texto: "??/??/????: Quantos dias estou aqui? Lembrar: O que tem do outro lado daquela ponte de cordas?"
+            }
+        }],
+        
+        estadoInicial: {
+            luz: true
+        }
+    },
+    Inicio: {
+        descricao: async (ctx: Contexto) => {
+            ctx.escrevaln("Você acorda em uma sala sem janelas (subsolo?), você não sabe porquê está aqui, ao norte há um quarto, Ao leste há uma passagem");
+        },
+        conexoes: {
+            "L": "Labirinto1",
+            "N": "Quarto"
         },
         itensIniciais: [{
             nome: "Lampiao",
             quantidade: 1,
             estadoInicial: {
-                luz: true
+                luz: false
             }
         }],
         estadoInicial: {
-            luz: false
+            luz: true
         }
     },
     Labirinto1: {
         descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
         conexoes: {
-            "O": () => "Labirinto1" as const,
-            "L": () => "Labirinto2" as const,
-            "S": () => "Labirinto4" as const
+            "O": "Inicio",
+            "L": "Labirinto2",
+            "S": "Labirinto4"
         },
         estadoInicial: {
             luz: false
@@ -34,19 +76,31 @@ export const salasInicio = {
     Labirinto2: {
         descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
         conexoes: {
-            "O": () => "Inicio" as const,
-            "S": () => "Labirinto5" as const
+            "O": "Labirinto1",
+            "S": "Labirinto5",
+            "N": "Labirinto4"
         },
         estadoInicial: {
             luz: false
         }
     },
     Labirinto3: {
-        descricao: () => "Você achou uma sala com uma rachadura no teto, onde há alguns galhos e luz do sol, há uma corda que desce em um poço",
+        descricao: async (ctx: Contexto) => {
+            ctx.escrevaln("Você está em uma caverna, um pouco da luz do sol entra por uma abertura no alto, você vê uma ponte de cordas cruzando por cima de você, há um poço no meio da sala.");
+        },
         conexoes: {
-            "N": () => "Labirinto3" as const,
-            "S": () => "Labirinto6" as const,
-            "DESCER": () => "Poço" as const,
+            "N": "Labirinto3",
+            "S": "Labirinto6",
+            "DESCER": async (ctx: Contexto) => {
+                let objetos = await ctx.getItensNoChao();
+                const [ corda ] = objetos.filter((o) => o.nome === "Corda");
+                if(corda) {
+                    ctx.escrevaln("Você desce a corda e chega ao fundo do poço");
+                    await ctx.moverParaSala("Poço");
+                } else {
+                    ctx.escrevaln("Você não tem como descer, não há nenhuma corda aqui");
+                }
+            }
         },
         estadoInicial: {
             luz: true
@@ -55,9 +109,9 @@ export const salasInicio = {
     Labirinto4: {
         descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
         conexoes: {
-            "N": () => "Labirinto1" as const,
-            "O": () => "Labirinto7" as const,
-            "L": () => "Labirinto5" as const
+            "N": "Labirinto1",
+            "O": "Labirinto7",
+            "L": "Labirinto5"
         },
         estadoInicial: {
             luz: false
@@ -66,9 +120,9 @@ export const salasInicio = {
     Labirinto5: {
         descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
         conexoes: {
-            "N": () => "Labirinto2" as const,
-            "O": () => "Labirinto4" as const,
-            "L": () => "Labirinto6" as const
+            "N": "Labirinto2",
+            "O": "Labirinto4",
+            "L": "Labirinto6"
         },
         estadoInicial: {
             luz: false
@@ -77,8 +131,8 @@ export const salasInicio = {
     Labirinto6: {
         descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
         conexoes: {
-            "N": () => "Labirinto3" as const,
-            "O": () => "Labirinto5" as const
+            "N": "Labirinto3",
+            "O": "Labirinto5"
         },
         estadoInicial: {
             luz: false
@@ -87,9 +141,9 @@ export const salasInicio = {
     Labirinto7: {
         descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
         conexoes: {
-            "N": () => "Labirinto7" as const,
-            "O": () => "Labirinto4" as const,
-            "L": () => "Labirinto8" as const
+            "N": "Labirinto7",
+            "O": "Labirinto4",
+            "L": "Labirinto8"
         },
         estadoInicial: {
             luz: false
@@ -98,29 +152,42 @@ export const salasInicio = {
     Labirinto8: {
         descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
         conexoes: {
-            "N": () => "Labirinto5" as const,
-            "O": () => "Labirinto7" as const,
-            "L": () => "Labirinto9" as const
+            "N": "Labirinto5",
+            "O": "Labirinto7",
+            "L": "Labirinto9"
         },
         estadoInicial: {
             luz: false
-        }
+        },
+        itensIniciais: [{
+            nome: "Corda",
+            quantidade: 1
+        }]
     },
     Labirinto9: {
-        descricao: () => "Todos os lados há passagens, tudo igual, não há como saber onde está.",
+        descricao: () => "Todos os lados há passagens, tudo igual, pela parede há degraus que levam para parte de cima da caverna.",
         conexoes: {
-            "N": () => "Labirinto6" as const,
-            "O": () => "Labirinto8" as const,
-            "S": () => "Caverna" as const
+            "N": "Labirinto6",
+            "O": "Labirinto8",
+            "SUBIR": "Caverna"
         },
         estadoInicial: {
             luz: false
         }
     },
     Poço: {
-        descricao: () => "Este é um poço no fundo da caverna, para subir há uma corda",
+        descricao: () => "Este é um poço no fundo da caverna.",
         conexoes: {
-            "SUBIR": () => "Labirinto3" as const
+            "SUBIR": async (ctx: Contexto) => {
+                let objetos = await ctx.getItensNoChao("Labirinto3");
+                const [ corda ] = objetos.filter((o) => o.nome === "Corda");
+                if(corda) {
+                    ctx.escrevaln("Você sobe a corda e chega de volta na sala com o poço");
+                    await ctx.moverParaSala("Labirinto3");
+                } else {
+                    ctx.escrevaln("Você não tem como subir, não há nenhuma corda descendo até aqui");
+                }
+            }
         },
         itensIniciais: [{
             nome: "Pedra",
@@ -131,24 +198,23 @@ export const salasInicio = {
         }
     },
     Caverna: {
-        descricao: () => `Você está em uma caverna escura,
-        Há uma ponte de cordas ao leste, parece bem frágil, O que será que tem lá?
-        `,
+        descricao: () => "Você está no alto de uma caverna, bem alto uma abertura ilumina o local, cruzando um abismo há uma ponte de cordas ao leste, parece bem frágil, O que será que tem lá?",
         conexoes: {
-            "O": () => "Labirinto9" as const,
+            "DESCER": "Labirinto9",
             "L": async (ctx: Contexto) => {
                 let objetos = await ctx.getMochila();
                 const [ pedras ] = objetos.filter((o) => o.nome === "Pedra");
                 if(pedras && pedras.quantidade > 1) {
-                    ctx.escrevaln("Seu peso faz a ponte balança e você cai no Poço abaixo");
-                    await ctx.moverParaSala("Poço");
+                    ctx.escrevaln("Seu peso faz a ponte balançar e você cai...");
+                    const qual = Math.floor(Math.random() * 9) + 1;
+                    await ctx.moverParaSala(`Labirinto${qual}` as any);
                 } else {
                     await ctx.moverParaSala("Tesouro");
                 }
             },
         },
         estadoInicial: {
-            luz: false
+            luz: true
         }
     },
     Tesouro: {
@@ -160,9 +226,16 @@ export const salasInicio = {
             }
         },
         conexoes: {
-            "O": (ctx: Contexto) => {
-                ctx.escrevaln("Você escorrega e cai no poço abaixo");
-                return "Poço" as const;
+            "O": async (ctx: Contexto) => {
+                let objetos = await ctx.getMochila();
+                const [ pedras ] = objetos.filter((o) => o.nome === "Pedra");
+                if(pedras && pedras.quantidade > 1) {
+                    ctx.escrevaln("Seu peso faz a ponte balançar e você cai...");
+                    const qual = Math.floor(Math.random() * 9) + 1;
+                    await ctx.moverParaSala(`Labirinto${qual}` as any);
+                } else {
+                    await ctx.moverParaSala("Caverna");
+                }
             },
             "ABRIR": async (ctx: Contexto, info: SalaInfo) => {
                 if(info.estado?.bauAberto) {

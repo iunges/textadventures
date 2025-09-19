@@ -28,15 +28,19 @@ export class SalaRepository {
         const result = await db.query.tableSalas.findFirst({
             where: eq(tableSalas.id, ondeId),
             with: {
-                itens: true,
+                itens: {
+                    where: gte(tableItens.quantidade, 1)
+                },
                 entidades: {
                     with: {
-                        mochila: true
+                        mochila: {
+                            where: gte(tableItens.quantidade, 1)
+                        }
                     }
                 }
             }
         });
-            
+        
         if(!result) {
             throw new RevokeSessionError("Usuário em sala que não existe!");
         }
@@ -53,8 +57,8 @@ export class SalaRepository {
             jogador: jogador,
             sala: sala,
             global: global!,
-            itensNoChao: itens.filter(i => i.quantidade > 0),
-            mochila: mochila.filter(i => i.quantidade > 0),
+            itensNoChao: itens,
+            mochila: mochila,
             entidadesNaSala: entidades,
         };
     }

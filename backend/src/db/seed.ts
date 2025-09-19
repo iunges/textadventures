@@ -4,7 +4,7 @@ import { db } from "./drizzle.ts";
 import { type Sala, tableSalas } from "./salaSchema.ts";
 import { type Item, tableItens } from "./itemSchema.ts";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import { salas, type SalaNome } from "../jogo/config.ts";
+import { gerarPilhaId, salas, type SalaNome } from "../jogo/config.ts";
 
 // Assume que acabou de dar drizzle kit push, então as tabelas estão criadas mas vazias
 // OU, se já tiver dados, não insere duplicados
@@ -37,10 +37,10 @@ try {
 
         if(configSala.itensIniciais) {
             for(let item of configSala.itensIniciais) {
+                const pilhaId = gerarPilhaId(item.nome, item.estadoInicial);
                 insertItens.push({
                     nome: item.nome,
-                    // A FAZER: lidar com pilhaId de acordo com o estado
-                    pilhaId: item.nome,
+                    pilhaId: pilhaId,
                     quantidade: item.quantidade,
                     quantidadeInicial: item.quantidade,
                     ondeId: sala.id,

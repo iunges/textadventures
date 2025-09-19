@@ -16,8 +16,10 @@ const _salas = {
     }
 } as const;
 
+type CallbackOrValue<T, U> = T | ((ctx: Contexto, info: U) => T | Promise<T>);
+
 export type ItemType<ITEM = string> = {
-    descricao: (ctx: Contexto, info: ItemInfo) => void | string | Promise<string | void>;
+    descricao: CallbackOrValue<string | void, ItemInfo>;
     itensIniciais?: {
         nome: ITEM;
         quantidade: number;
@@ -26,10 +28,10 @@ export type ItemType<ITEM = string> = {
 };
 
 export type SalaType<SALA = string, ITEM = string> = {
-    descricao: (ctx: Contexto, info: SalaInfo) => void | string | Promise<string | void>;
-    conexoes: { 
-        [direcao: string]: (ctx: Contexto, info: SalaInfo) => void | SALA | Promise<SALA | void>;
-    };
+    descricao: CallbackOrValue<string | void, SalaInfo>;
+    conexoes: CallbackOrValue<{ 
+        [direcao: string]: CallbackOrValue<SALA | void, SalaInfo>;
+    }, SalaInfo>;
     itensIniciais?: readonly {
         nome: ITEM;
         quantidade: number;
@@ -58,4 +60,33 @@ export const getSalaConfig = (salaId: SalaNome) => {
         throw new Error(`Sala com id ${salaId} não existe na configuração do jogo!`);
     }
     return salaConfig;
+}
+
+export const execCallbackOrValue = async <T, U>(callbackOrValue: CallbackOrValue<T, U>, ctx: Contexto, info: U) => {
+    if(typeof callbackOrValue === "function") {
+        return await (callbackOrValue as (ctx: Contexto, info: U) => T | Promise<T>)(ctx, info);
+    } else {
+        return callbackOrValue;
+    }
+}
+
+// https://lowrey.me/implementing-javas-string-hashcode-in-javascript/
+function hashString(str: string){
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		hash += Math.pow(str.charCodeAt(i) * 31, str.length - i);
+		hash = hash & hash; // Convert to 32bit integer
+	}
+	return hash;
+}
+
+export const gerarPilhaId = (itemNome: ItemTipo, estado?: Estado | null) => {
+    if(!estado || Object.keys(estado).length === 0) {
+        return itemNome;
+    } else {
+        const chaves = Object.keys(estado).sort().map((k) => `${k}=${JSON.stringify(estado[k])}`);
+        const serializadoA = chaves.join("@");
+        const serializadoB = chaves.join("!").split("").reverse().join("");
+        return `${itemNome}:${chaves.length.toString(36)}:${hashString(serializadoA).toString(36)}:${hashString(serializadoB).toString(36)}`;
+    }
 }
