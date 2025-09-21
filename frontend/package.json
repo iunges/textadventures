@@ -19,6 +19,7 @@
     "@xterm/xterm": "^5.5.0",
     "any-ascii": "^0.3.3",
     "chalk": "^5.4.1",
+    "fastest-levenshtein": "^1.0.16",
     "zod": "^4.1.8"
   }
 }

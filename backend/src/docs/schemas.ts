@@ -60,4 +60,12 @@ export const acaoExtraSchema = z.object({
     quantidade: z.number().optional().meta({
         description: "Quantidade a ser usada na ação (PEGAR, LARGAR)",
     }),
+
+    item: z.uuid().optional().meta({
+        description: "ID do item a ser usado na ação (USAR, COLOCAR)",
+    }),
+
+    entidade: z.uuid().optional().meta({
+        description: "ID da entidade a ser usada na ação (USAR, DAR)",
+    }),
 });

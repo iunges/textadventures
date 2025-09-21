@@ -1,6 +1,7 @@
 import z from "zod";
 import { type DocPaths } from "../utils/docs.ts";
 import { acaoExtraSchema, respostaSituacao } from "./schemas.ts";
+import { Acao } from "../jogo/comandos/comandoConfig.ts";
 
 export const itemDocs = {
     /*"/item/pegar": {
@@ -51,9 +52,9 @@ export const itemDocs = {
                         description: "ID do item com o qual realizar a ação",
                         example: "UUID",
                     }),
-                    acao: z.string().meta({
+                    acao: z.enum(Acao).meta({
                         description: "Ação a ser realizada",
-                        example: "usar",
+                        example: "PEGAR",
                     }),
                     extra: acaoExtraSchema.optional()
                 }),

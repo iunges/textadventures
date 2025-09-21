@@ -1,6 +1,7 @@
 import z from "zod";
 import { type DocPaths } from "../utils/docs.ts";
 import { acaoExtraSchema, respostaSituacao } from "./schemas.ts";
+import { Acao } from "../jogo/comandos/comandoConfig.ts";
 
 export const salaDocs = {
     "/sala/olhar": {
@@ -48,7 +49,7 @@ export const salaDocs = {
             description: "Tenta mover o jogador para uma sala adjacente na direção especificada (ex: norte, sul, leste, oeste).",
             schema: {
                 body: z.object({
-                    acao: z.string().toUpperCase().meta({
+                    acao: z.enum(Acao).meta({
                         description: "Direção para a qual se mover ou uma ação",
                         example: "N",
                     }),

@@ -93,10 +93,10 @@ class Lampiao extends ItemBase {
             return "Lampião antigo (apagado)";
         }
     }
-    async acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         const item = this.item;
         return {
-            "ACENDER": async () => {
+            "LIGAR": async () => {
                 if(item.estado?.luz) {
                     return "O lampião já está aceso.";
                 } else {
@@ -104,7 +104,7 @@ class Lampiao extends ItemBase {
                     return "Você acende o lampião.";
                 }
             },
-            "APAGAR": async () => {
+            "DESLIGAR": async () => {
                 if(item.estado?.luz) {
                     await ctx.moverItem(this, { ondeId: item.ondeId, quantidade: 1, estado: { luz: false } });
                     return "Você apaga o lampião.";
@@ -130,7 +130,7 @@ class Papel extends ItemBase {
             return "Pedaço de papel em branco."
         }
     }
-    async acoes(ctx: Contexto, extra?: Estado | null) {
+    acoes(ctx: Contexto, extra?: Estado | null): AcoesCallbackResult {
         const item = this.item;
         return {
             "LER": () => {

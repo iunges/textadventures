@@ -6,7 +6,7 @@ import { EntidadePorta } from "../entidades/porta.ts";
 import type { ItemBase } from "../itens/base.ts";
 import { itensPadrao } from "../itens/inicio.ts";
 import type { Estado, MaybePromise } from "../types.ts";
-import { SalaBase, type ItemInicial } from "./base.ts";
+import { SalaBase, type AcoesCallbackResult, type ItemInicial } from "./base.ts";
 /*
 export const salasInicio = {
     Quarto: {
@@ -316,7 +316,7 @@ class Quarto extends SalaBase {
         return "Você está em um quarto simples sem janelas, na parede há vários riscos 一 二 三, há uma cama, uma mesa com um candelabro e uma porta ao sul";
     }
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "S": Inicio,
             "DORMIR": () => {
@@ -350,7 +350,7 @@ class Inicio extends SalaBase {
         return "Você acorda em uma sala sem janelas (subsolo?), você não sabe porquê está aqui, ao norte há um quarto, Ao leste há uma porta";
     }
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Quarto,
             "L": () => {
@@ -379,7 +379,7 @@ class Labirinto1 extends Labirinto {
         ref: { sala: Inicio }
     }];
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "O": () => {
                 const porta = this.obterEntidadePorNome(EntidadePorta).at(0);
@@ -410,7 +410,7 @@ class Labirinto2 extends Labirinto {
 class EntidadePoco extends EntidadeBase {
     static nome = "Poco";
 
-    descricao(ctx: Contexto): MaybePromise<string | void> {
+    descricao(ctx: Contexto) {
         const corda = this.obterItensPorNome(itensPadrao.Corda).at(0);
         if(this.ehReferencia) {
             if(corda) {
@@ -427,7 +427,7 @@ class EntidadePoco extends EntidadeBase {
         }
     }
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         const corda = this.obterItensPorNome(itensPadrao.Corda).at(0);
         if(this.ehReferencia) {
             return {
@@ -483,7 +483,7 @@ class Labirinto3 extends Labirinto {
         return "Você está em uma caverna, um pouco da luz do sol entra por uma abertura no alto, você vê uma ponte de cordas cruzando por cima de você, há um poço no meio da sala.";
     }
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Labirinto3,
             "S": Labirinto6
@@ -512,7 +512,7 @@ class Labirinto4 extends Labirinto {
     static nome = "Labirinto4";
     static estadoInicial = (): Estado => ({ luz: false });
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Labirinto1,
             "O": Labirinto7,
@@ -525,7 +525,7 @@ class Labirinto5 extends Labirinto {
     static nome = "Labirinto5";
     static estadoInicial = (): Estado => ({ luz: false });
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Labirinto2,
             "O": Labirinto4,
@@ -538,7 +538,7 @@ class Labirinto6 extends Labirinto {
     static nome = "Labirinto6";
     static estadoInicial = (): Estado => ({ luz: false });
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Labirinto3,
             "O": Labirinto5       
@@ -550,7 +550,7 @@ class Labirinto7 extends Labirinto {
     static nome = "Labirinto7";
     static estadoInicial = (): Estado => ({ luz: false });
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Labirinto7,
             "O": Labirinto4,
@@ -567,7 +567,7 @@ class Labirinto8 extends Labirinto {
         quantidade: 1
     }];
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Labirinto5,
             "O": Labirinto7,
@@ -584,7 +584,7 @@ class Labirinto9 extends Labirinto {
         return "Todos os lados há passagens, tudo igual, pela parede há degraus que levam para parte de cima da caverna.";
     }
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "N": Labirinto6,
             "O": Labirinto8,
@@ -602,7 +602,7 @@ class Caverna extends SalaBase {
         return "Você está no alto de uma caverna, bem alto uma abertura ilumina o local, cruzando um abismo há uma ponte de cordas ao leste, parece bem frágil, O que será que tem lá?";
     }
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "DESCER": Labirinto9,
             "L": () => {
@@ -634,7 +634,7 @@ class BauTesouro extends entidadesContainer.Bau {
         }
     }
     
-    acoes(ctx: Contexto, extra?: Estado | null) {
+    acoes(ctx: Contexto, extra?: Estado | null): AcoesCallbackResult {
         const pedras = this.onde.obterItensPorNome(itensPadrao.Pedra).at(0);
         if(this.estaAberto()) {
             return {
@@ -692,7 +692,7 @@ class Tesouro extends SalaBase {
         return "Você está em uma sala de pedra decorada";
     }
 
-    acoes(ctx: Contexto) {
+    acoes(ctx: Contexto): AcoesCallbackResult {
         return {
             "O": () => {
                 let pedras = ctx.jogador.obterItensPorNome(itensPadrao.Pedra).at(0);

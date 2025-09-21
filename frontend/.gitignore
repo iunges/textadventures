@@ -1,3 +1,8 @@
+# Programas do portugol
+*.por
+*.por.txt
+
+
 # Logs
 logs
 *.log

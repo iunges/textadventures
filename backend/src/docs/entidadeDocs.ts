@@ -1,6 +1,7 @@
 import z from "zod";
 import { type DocPaths } from "../utils/docs.ts";
 import { acaoExtraSchema, respostaSituacao } from "./schemas.ts";
+import { Acao } from "../jogo/comandos/comandoConfig.ts";
 
 export const entidadeDocs = {
     "/entidade/acao": {
@@ -13,9 +14,9 @@ export const entidadeDocs = {
                         description: "ID da entidade com a qual realizar a ação",
                         example: "UUID",
                     }),
-                    acao: z.string().meta({
+                    acao: z.enum(Acao).meta({
                         description: "Ação a ser realizada",
-                        example: "abrir",
+                        example: "ABRIR",
                     }),
                     extra: acaoExtraSchema.optional()
                 }),

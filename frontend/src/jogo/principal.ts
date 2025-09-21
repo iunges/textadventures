@@ -1,6 +1,8 @@
 import anyAscii from "any-ascii";
 import { passwordPrompt, prompt, termPrint } from "../terminal";
 import { APIError, fetchClient, type RespostaEntidades, type RespostaItens, type RespostaSala, type RespostaSituacao } from "../utils/fetchApi";
+import { CommandParser } from "../utils/commandParser";
+import { Acao } from "../utils/comandoConfig";
 
 type ComponenteAtualizavel = { id: string, atualizadoEm: string };
 function mudouAlgo(_obj1: undefined | null | ComponenteAtualizavel | ComponenteAtualizavel[], _obj2?: null | ComponenteAtualizavel | ComponenteAtualizavel[]) {
@@ -124,6 +126,53 @@ const fazerLogin = async () => {
     }
 }
 
+export const desambiguar = async (acao: string, alvos: Record<string, { sinonimos: string[], ref: RespostaItens | RespostaEntidades }>, alvosMatch: {match: string, confidence: number}[]) => {
+    let item: RespostaItens[] = [];
+    let entidade: RespostaEntidades[] = [];
+    for(let result of alvosMatch) {
+        const alvo = alvos[result.match]?.ref;
+        if("tipo" in alvo) {
+            if(alvo.acoes?.includes(acao))
+            entidade.push(alvo);
+        } else {
+            if(alvo.acoes?.includes(acao))
+            item.push(alvo as RespostaItens);
+        }
+    }
+
+    if(item.length + entidade.length > 1) {
+        termPrint("Seja mais específico:");
+        let k = 0;
+        for(; k < item.length; k++) {
+            const i = item[k];
+            termPrint(`  ${String.fromCharCode(k + "A".charCodeAt(0))}: ${i.quantidade} ${i.nome} ${i.descricao?.trim() || ""}`);
+        }
+        for(; k < entidade.length; k++) {
+            const e = entidade[k];
+            termPrint(`  ${String.fromCharCode(k + "A".charCodeAt(0))}: ${e.tipo} ${e.descricao?.trim() || ""}`);
+        }
+        const escolha = (await prompt("Escolha um: ")).trim();
+        const escolhaNum = escolha.toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
+        if(isNaN(escolhaNum) || escolhaNum < 0) {
+            termPrint("Escolha inválida.");
+            return {item: undefined, entidade: undefined };
+        }
+
+        if(escolhaNum < item.length) {
+            item = [item[escolhaNum]];
+            entidade = [];
+        } else if (escolhaNum - item.length < entidade.length) {
+            entidade = [entidade[escolhaNum - item.length]];
+            item = [];
+        } else {
+            termPrint("Escolha inválida.");
+            return {item: undefined, entidade: undefined };
+        }
+    }
+
+    return { item: item.at(0), entidade: entidade.at(0) };
+}
+
 export const principal = async () => {
     let situacao: RespostaSituacao | null = null;
     while(true) {
@@ -134,168 +183,55 @@ export const principal = async () => {
 
             let { sala, jogador } = situacao;
 
-            const comando = (await prompt(jogador.username+"> ")).trim().toUpperCase();
-            let partes = comando.split(" ").map(p => anyAscii(p.replaceAll(/[\r\n\t]/g," ").trim())).filter(p => {
-                return p.length > 0
-            });
-
-            let acao = partes.length > 0 ? partes[0] : "OLHAR";
-            let item: RespostaItens[] = [];
-            let entidade: RespostaEntidades[] = [];
-            let nome: string | undefined = undefined;
-            let quantidade: number | undefined = undefined;
-            const args = partes.slice(1);
-            if(args.length > 0) {
-                if(args[0].match(/^\d+$/)) {
-                    quantidade = parseInt(args[0]);
-                    args.shift();
-                }
-            }
-            if(args.length > 0) {
-                nome = args[0];
-                args.shift();
-            }
-
-            // Mochila
-            item = jogador.itens?.filter(i => (i.nome.toUpperCase() === nome || nome === undefined) && i.acoes?.includes(acao)) || [];
+            const alvos: Record<string, { sinonimos: string[], ref: RespostaItens | RespostaEntidades }> = {};
             
-            // Chão
-            item.push(...(sala.itens?.filter(i => (i.nome.toUpperCase() === nome || nome === undefined) && i.acoes?.includes(acao)) || []));
-
-            // Entidades
+            for(let item of jogador.itens || []) {
+                alvos[item.id] = { sinonimos: [item.nome], ref: item };
+            }
+            for(let item of sala.itens || []) {
+                alvos[item.id] = { sinonimos: [item.nome], ref: item };
+            }
             for(let ent of sala.entidades || []) {
-                // Tipo ou nome do jogador
-                if((ent.tipo.toUpperCase() === nome || ent.username?.toUpperCase() === nome || nome === undefined) && ent.acoes?.includes(acao)) {
-                    entidade.push(ent);
+                alvos[ent.id] = { sinonimos: [ent.tipo], ref: ent };
+                if(ent.username) {
+                    alvos[ent.id].sinonimos.push(ent.username);
                 }
-
-                // Itens da entidade
-                item.push(...(ent.itens?.filter(i => (i.nome.toUpperCase() === nome || nome === undefined) && i.acoes?.includes(acao)) || []));
+                
+                for(let item of ent.itens || []) {
+                    alvos[item.id] = { sinonimos: [item.nome], ref: item };
+                }
             }
             
+            const parser = new CommandParser(await prompt(jogador.username+"> "), { alvos });
+            const { acao, quantidade, alvoA: _alvoA, alvoB: _alvoB, resto } = parser.parse();
 
-            if(!acao || acao === "OLHAR" || acao === "MOCHILA") {
+            console.log(alvos, _alvoA, _alvoB);
+                      
+            const alvoA = await desambiguar(acao, alvos, _alvoA);
+            const alvoB = await desambiguar(acao, alvos, _alvoB);
+
+            if(!acao || acao === Acao.Olhar || acao === Acao.Mochila) {
                 // Apenas olhar ao redor
-                if(acao === "MOCHILA") {
+                if(acao === Acao.Mochila) {
                     situacao = descreverTudo(await fetchClient.salaOlhar(), { ...situacao, jogador: undefined });
                 } else {
                     situacao = descreverTudo(await fetchClient.salaOlhar(), { ...situacao, sala: undefined});
                 }
-            } else if (acao === "SAIR" || acao === "LOGOUT") {
+            } else if (acao === Acao.Sair) {
                 await fetchClient.logout();
                 termPrint("Até mais!");
                 break;
             } else {
-                if(item.length + entidade.length > 1) {
-                    termPrint("Seja mais específico:");
-                    let k = 0;
-                    for(; k < item.length; k++) {
-                        const i = item[k];
-                        termPrint(`  ${String.fromCharCode(k + "A".charCodeAt(0))}: ${i.quantidade} ${i.nome} ${i.descricao?.trim() || ""}`);
-                    }
-                    for(; k < entidade.length; k++) {
-                        const e = entidade[k];
-                        termPrint(`  ${String.fromCharCode(k + "A".charCodeAt(0))}: ${e.tipo} ${e.descricao?.trim() || ""}`);
-                    }
-                    const escolha = (await prompt("Escolha um: ")).trim();
-                    const escolhaNum = escolha.toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
-                    if(isNaN(escolhaNum) || escolhaNum < 0) {
-                        termPrint("Escolha inválida.");
-                        continue;
-                    }
-
-                    if(escolhaNum < item.length) {
-                        item = [item[escolhaNum]];
-                        entidade = [];
-                    } else if (escolhaNum - item.length < entidade.length) {
-                        entidade = [entidade[escolhaNum - item.length]];
-                        item = [];
-                    } else {
-                        termPrint("Escolha inválida.");
-                        continue;
-                    }
-                }
-
-                if(item.length > 0) {
-                    situacao = descreverTudo(await fetchClient.itemAcao(item[0].id, acao, { quantidade, texto: args.join(" ") || undefined }), situacao);
-                } else if(entidade.length > 0) {
-                    situacao = descreverTudo(await fetchClient.entidadeAcao(entidade[0].id, acao, { quantidade, texto: args.join(" ") || undefined }), situacao);
+                console.log(acao, quantidade, alvoA, alvoB, resto);
+                if(alvoA.item) {
+                    situacao = descreverTudo(await fetchClient.itemAcao(alvoA.item.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: resto || undefined }), situacao);
+                } else if(alvoA.entidade) {
+                    situacao = descreverTudo(await fetchClient.entidadeAcao(alvoA.entidade.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: resto || undefined }), situacao);
                 } else {
-                    switch(acao) {
-                        case "NORTE": acao = "N"; break;
-                        case "SUL": acao = "S"; break;
-                        case "LESTE": acao = "L"; break;
-                        case "OESTE": acao = "O"; break;
-                    }
-
-                    situacao = descreverTudo(await fetchClient.salaMover(acao), situacao);
+                    situacao = descreverTudo(await fetchClient.salaMover(acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: resto || undefined }), situacao);
                 }
             }
 
-            /*// A FAZER: processar isso melhor kk
-            if(!acao || acao === "OLHAR") {
-                // Apenas olhar ao redor
-                situacao = descreverTudo(await fetchClient.salaOlhar(), { ...situacao, sala: undefined});
-            } else if (acao === "MOCHILA") {
-                let _situacao = situacao;
-                situacao = await fetchClient.salaOlhar();
-                descreverTudo(situacao, { ..._situacao, jogador: { ..._situacao.jogador, itens: null } });
-            } else if (acao === "SAIR") {
-                await fetchClient.logout();
-                termPrint("Até mais!");
-                break;
-            } else if (acao === "PEGAR") {
-                let quantidade = 1;
-                if(args[0].match(/^\d+$/)) {
-                    quantidade = parseInt(args[0]);
-                    args.shift();
-                }
-                const itemId = sala.itens?.find(i => i.nome.toUpperCase() === args[0])?.id;
-                if(!itemId) {
-                    termPrint("Não tem isso aqui.");
-                    continue;
-                }
-
-                situacao = descreverTudo(await fetchClient.itemAcao(itemId, "PEGAR", { quantidade }), situacao);
-            } else if(acao === "LARGAR") {
-                let quantidade = 1;
-                if(args[0].match(/^\d+$/)) {
-                    quantidade = parseInt(args[0]);
-                    args.shift();
-                }
-                const itemId = jogador.itens?.find(i => i.nome.toUpperCase() === args[0])?.id;
-                if(!itemId) {
-                    termPrint("Você não tem isso.");
-                    continue;
-                }
-
-                situacao = descreverTudo(await fetchClient.itemAcao(itemId, "LARGAR", { quantidade }), situacao);
-            } else if (acao === "ESCREVER" || acao === "LER") { // Melhorar isso...
-                let itemId = jogador.itens?.find(i => i.nome.toUpperCase() === args[0])?.id;
-                if(!itemId) {
-                    itemId = sala.itens?.find(i => i.nome.toUpperCase() === args[0])?.id;
-                    if(!itemId) {
-                        termPrint("Não tem isso aqui e nem você.");
-                        continue;
-                    }
-                }
-
-                if(acao === "ESCREVER") {
-                    const texto = args.slice(1).join(" ") || "";
-                    situacao = descreverTudo(await fetchClient.itemAcao(itemId, acao, { texto }), situacao);
-                } else {
-                    situacao = descreverTudo(await fetchClient.itemAcao(itemId, acao), situacao);
-                }
-            } else {
-                switch(acao) {
-                    case "NORTE": acao = "N"; break;
-                    case "SUL": acao = "S"; break;
-                    case "LESTE": acao = "L"; break;
-                    case "OESTE": acao = "O"; break;
-                }
-
-                situacao = descreverTudo(await fetchClient.salaMover(acao), situacao);
-            }*/
         } catch(err) {
             if(err instanceof APIError && err.status === 401) {
                 termPrint("Você precisa fazer login.");

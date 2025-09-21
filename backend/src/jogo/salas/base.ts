@@ -1,4 +1,5 @@
 import type { Sala } from "../../db/salaSchema.ts";
+import type { AcaoValue } from "../comandos/comandoConfig.ts";
 import type { Contexto } from "../contexto.ts";
 import type { EntidadeBase, EntidadeBaseStatic, EntidadeInicial } from "../entidades/base.ts";
 import type { ItemBase, ItemBaseStatic } from "../itens/base.ts";
@@ -18,7 +19,7 @@ export interface SalaBaseStatic {
 }
 
 export type AcoesCallbackResult = {
-    [acao: string]: ArrowOrValue<typeof SalaBase & SalaBaseStatic | string | void>;
+    [acao in AcaoValue]?: ArrowOrValue<typeof SalaBase & SalaBaseStatic | string | void>;
 };
 
 export abstract class SalaBase {    
