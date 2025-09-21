@@ -6,10 +6,12 @@ export class EntidadeJogador extends EntidadeBase {
     descricao(ctx: Contexto) {
         if(this.entidade.id === ctx.jogador.entidade.id) {
             return "Você mesmo.";
-        } else if(this.entidade.tipo === "JOGADOR") {
-            return this.entidade.username || "um jogador";
         } else {
-            return `um ${this.entidade.tipo.toLowerCase()}`;
+            return this.entidade.username || "um jogador";
         }
+    }
+
+    estaVisivel(): boolean {
+        return Date.now() - new Date(this.entidade.atualizadoEm).getTime() <= 1000 * 60 * 10;
     }
 }

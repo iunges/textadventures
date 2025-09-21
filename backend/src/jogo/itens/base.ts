@@ -51,4 +51,13 @@ export abstract class ItemBase {
         this.item = info.item;
         this.onde = info.onde;
     }
+
+    temLuz(): boolean {
+        if(this.item.estado?.luz === true) return true;
+        else return false;
+    }
+
+    estaVisivel() {
+        return true;
+    }
 }

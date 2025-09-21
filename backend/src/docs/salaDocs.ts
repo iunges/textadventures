@@ -1,6 +1,6 @@
 import z from "zod";
 import { type DocPaths } from "../utils/docs.ts";
-import { respostaSituacao } from "./schemas.ts";
+import { acaoExtraSchema, respostaSituacao } from "./schemas.ts";
 
 export const salaDocs = {
     "/sala/olhar": {
@@ -29,7 +29,6 @@ export const salaDocs = {
                         entidades: z.array(z.object({
                             id: z.uuid().meta({ example: "UUID" }),
                             localId: z.uuid().meta({ example: "UUID" }),
-                            categoria: z.string().meta({ example: "JOGADOR" }),
                             tipo: z.string().meta({ example: "JOGADOR" }),
                             username: z.string().meta({ example: "usuario123" }),
                             atualizadoEm: z.iso.datetime().meta({ example: "2023-10-05T14:48:00.000Z" }),
@@ -53,10 +52,7 @@ export const salaDocs = {
                         description: "Direção para a qual se mover ou uma ação",
                         example: "N",
                     }),
-                    extra: z.record(z.string(), z.any()).optional().meta({
-                        description: "Dados extras para a ação, se necessário",
-                        example: { chave: "valor" },
-                    }),
+                    extra: acaoExtraSchema.optional()
                 }),
                 response: respostaSituacao
             }

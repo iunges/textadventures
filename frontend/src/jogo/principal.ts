@@ -39,16 +39,23 @@ function descreverTudo(situacao: RespostaSituacao, situacaoAnterior?: Partial<Re
         }
     }
 
-    const entidades = sala.entidades?.filter(e => 
-        (e.tipo !== "JOGADOR" || (Date.now() - new Date(e.atualizadoEm).getTime() <= 1000 * 60 * 10)) 
-    ) || [];
+    const entidades = sala.entidades;
     if(entidades && entidades.length > 0 && (mudouSala || mudouAlgo(entidades, situacaoAnterior?.sala?.entidades))) {
         termPrint("está aqui:");
         for(let entidade of entidades) {
-            termPrint(`  ${entidade.tipo === "JOGADOR" ? entidade.username : entidade.tipo} ${entidade.descricao?.trim()}`);
+            termPrint(`  ${entidade.descricao?.trim()}`);
             if(entidade.acoes && entidade.acoes.length > 0) {
                 termPrint(`    (${entidade.acoes.join(", ")})`);
-            }            
+            }
+            if(entidade.itens) {
+                termPrint("  que está com:");
+                for(let item of entidade.itens) {
+                    termPrint(`     ${item.quantidade} ${item.descricao?.trim() || item.nome}`);
+                    if(item.acoes && item.acoes.length > 0) {
+                        termPrint(`    (${item.acoes.join(", ")})`);
+                    }
+                }
+            }
         }
     }
     
@@ -78,10 +85,7 @@ function descreverTudo(situacao: RespostaSituacao, situacaoAnterior?: Partial<Re
     return {
         resposta,
         jogador,
-        sala: {
-            ...sala,
-            entidades: entidades,
-        }
+        sala
     };
 }
 

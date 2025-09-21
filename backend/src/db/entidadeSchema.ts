@@ -5,29 +5,13 @@ import { tableItens, tableLocais } from './itemSchema.ts';
 import { UUID_ZERO } from './utils.ts';
 import { relations, sql } from 'drizzle-orm';
 import type { Estado } from '../jogo/types.ts';
-
-export const enumCategoriaEntidade = pgEnum('categoria_entidade', ['JOGADOR', 'NPC', 'OBJETO', 'CRIATURA']);
-
-export const enumTipoEntidade = pgEnum('tipo_entidade', [
-    // Tipos de Jogador
-    'JOGADOR',
-
-    // NPCs
-    'GUARDA', 'MERCADOR', 'LADRAO',
-
-    // Entidades-Objeto (Coisas não-vivas que interagem e/ou se movem)
-    'ARVORE', 'PORTA', 'BAU',
-
-    // Criaturas
-    'GATO', 'LOBO'
-]);
+import { randomUUID } from 'crypto';
 
 export const tableEntidades = pgTable('entidades', {
     // Referência para o local para itens associado a esta entidade, criado pela trigger criar_local_automatico.
-    id: uuid('id').primaryKey().references(() => tableLocais.id, { onDelete: 'restrict' }).$defaultFn(() => UUID_ZERO),
+    id: uuid('id').primaryKey().references(() => tableLocais.id, { onDelete: 'restrict' }).$defaultFn(() => randomUUID()),
 
-    categoria: enumCategoriaEntidade('categoria').notNull(),
-    tipo: enumTipoEntidade('tipo').notNull(),
+    tipo: varchar('tipo', { length: 255 }).notNull(), // é o tipo da entidade (ex: "JOGADOR", "BAU", etc)
 
     // Onde a entidade está atualmente, se onde ele está for deletado, ela também será deletada (onDelete cascade)
     ondeId: uuid('onde_id').references(() => tableLocais.id, { onDelete: 'cascade' }).notNull(),

@@ -28,15 +28,9 @@ export class TriggerAplicarLocal {
         console.log(await db.execute(sql`
             CREATE OR REPLACE FUNCTION criar_local_automatico()
             RETURNS TRIGGER AS $$
-            DECLARE
-                novo_local_id UUID;
             BEGIN
                 -- 1. Insere uma nova linha na tabela de locais e captura o ID gerado.
-                INSERT INTO public.locais DEFAULT VALUES RETURNING id INTO novo_local_id;
-
-                -- 2. Atribui o ID capturado à coluna 'local_id' da linha que está sendo inserida.
-                --    (A variável NEW representa a linha que será inserida na tabela alvo, como 'salas' ou 'entidades')
-                NEW.id := novo_local_id;
+                INSERT INTO public.locais(id) VALUES (NEW.id);
 
                 -- 3. Retorna a linha modificada para que a operação de INSERT original possa continuar.
                 RETURN NEW;

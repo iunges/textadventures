@@ -1,11 +1,11 @@
 import type { Sala } from "../../db/salaSchema.ts";
 import type { Contexto } from "../contexto.ts";
-import type { EntidadeBase } from "../entidades/base.ts";
-import type { ItemBase } from "../itens/base.ts";
+import type { EntidadeBase, EntidadeInicial } from "../entidades/base.ts";
+import type { ItemBase, ItemBaseStatic } from "../itens/base.ts";
 import type { ArrowOrValue, Estado, MaybePromise } from "../types.ts";
 
 export type ItemInicial = {
-    item: typeof ItemBase;
+    item: typeof ItemBase & ItemBaseStatic;
     quantidade: number;
     estadoInicial?: Estado;
 };
@@ -13,9 +13,9 @@ export type ItemInicial = {
 export interface SalaBaseStatic {
     nome: string;
     itensIniciais?: () => ItemInicial[];
+    entidadesIniciais?: () => EntidadeInicial[];
     estadoInicial?: () => Estado;
 }
-
 
 export type AcoesCallbackResult = {
     [acao: string]: ArrowOrValue<typeof SalaBase & SalaBaseStatic | string | void>;
@@ -45,30 +45,33 @@ export abstract class SalaBase {
         this.entidades = info.entidades || [];
     }
 
+    obterItensPorNome(item: typeof ItemBase & ItemBaseStatic): ItemBase[] {
+        return this.itens.filter(i => i.item.nome === item.nome);
+    }
+
     temLuz(): boolean {
-        return true;
-        /*const sala = await this.getSala();
-        if(sala.estado?.luz === true) return true;
+        if(this.sala.estado?.luz === true) return true;
 
-        let chao = await this.getItensNoChao();
-        for(let obj of chao) {
-            if(obj.estado?.luz === true) return true;
+        for(let obj of this.itens) {
+            if(obj.temLuz()) return true;
         }
 
-        let mochila = await this.getMochila();
-        for(let obj of mochila) {
-            if(obj.estado?.luz === true) return true;
+        for(let ent of this.entidades) {
+            if(ent.temLuz()) return true;
         }
 
-        let entidades = await this.getEntidadesNaSala();
-        for(let ent of entidades) {
-            if(ent.estado?.luz === true) return true;
-            for(let obj of ent.mochila) {
-                if(obj.estado?.luz === true) return true;
-            }
-        }
+        return false;
+    }
 
-        return false;*/
+    estaVisivel() {
+        return this.temLuz();
+    }
+
+    getFilhosVisiveis() {
+        return {
+            itens: this.itens.filter(i => i.estaVisivel()),
+            entidades: this.entidades.filter(e => e.estaVisivel())
+        };
     }
 };
 

@@ -132,19 +132,6 @@ class Papel extends ItemBase {
     }
     async acoes(ctx: Contexto, extra?: Estado | null) {
         const item = this.item;
-        const acoes: AcoesCallbackResult = {};
-        if(!(item.estado?.texto && typeof item.estado.texto === "string")) {
-            acoes["ESCREVER"] = async () => {
-                let txt = "";
-                if(extra?.texto && typeof extra.texto === "string") {
-                    txt = extra.texto.replaceAll(/[^\x20-\x7E]+/g,"").substring(0,1024);
-                }
-
-                await ctx.moverItem(this, { ondeId: item.ondeId, quantidade: 1, estado: { texto: txt } });
-                return "Você escreve no papel.";
-            };
-        }
-
         return {
             "LER": () => {
                 if(item.estado?.texto && typeof item.estado.texto === "string") {
@@ -153,7 +140,15 @@ class Papel extends ItemBase {
                     return "O papel está em branco.";
                 }
             },
-            ...acoes
+            "ESCREVER": async () => {
+                let txt = "";
+                if(extra?.texto && typeof extra.texto === "string") {
+                    txt = extra.texto.replaceAll(/[^\x20-\x7E]+/g,"").substring(0,1024);
+                }
+
+                await ctx.moverItem(this, { ondeId: item.ondeId, quantidade: 1, estado: { texto: txt } });
+                return "Você escreve no papel.";
+            }
         };
     }
 }

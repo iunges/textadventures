@@ -1,7 +1,10 @@
 import type { Sala } from "../../db/salaSchema.ts";
 import { Contexto } from "../contexto.ts";
+import type { EntidadeBase, EntidadeInicial } from "../entidades/base.ts";
+import { entidadesContainer } from "../entidades/container.ts";
+import type { ItemBase } from "../itens/base.ts";
 import { itensPadrao } from "../itens/inicio.ts";
-import type { Estado } from "../types.ts";
+import type { Estado, MaybePromise } from "../types.ts";
 import { SalaBase, type ItemInicial } from "./base.ts";
 /*
 export const salasInicio = {
@@ -317,9 +320,6 @@ class Quarto extends SalaBase {
             "S": Inicio,
             "DORMIR": () => {
                 return "Você deita na cama e dorme por um tempo, mas nada mudou quando acorda.";
-            },
-            "ACENDER": async () => {
-                // A FAZER
             }
         };
     }
@@ -354,19 +354,278 @@ class Inicio extends SalaBase {
     }
 }
 
-class Labirinto1 extends SalaBase {
-    static nome = "Labirinto1";
-    static estadoInicial = (): Estado => ({ luz: false });
-
+class Labirinto extends SalaBase {
     descricao(ctx: Contexto) {
         return "Todos os lados há passagens, tudo igual, não há como saber onde está.";
     }
+}
+
+class Labirinto1 extends Labirinto {
+    static nome = "Labirinto1";
+    static estadoInicial = (): Estado => ({ luz: false });
 
     acoes(ctx: Contexto) {
         return {
             "O": Inicio,
-            //"L": Labirinto2,
-            //"S": Labirinto4
+            "L": Labirinto2,
+            "S": Labirinto4
+        };
+    }
+}
+
+class Labirinto2 extends Labirinto {
+    static nome = "Labirinto2";
+    static estadoInicial = (): Estado => ({ luz: false });
+
+    acoes(ctx: Contexto) {
+        return {
+            "O": Labirinto1,
+            "S": Labirinto5,
+            "N": Labirinto4
+        };
+    }
+}
+
+class Labirinto3 extends Labirinto {
+    static nome = "Labirinto3";
+    static estadoInicial = (): Estado => ({ luz: true });
+
+    descricao(ctx: Contexto): string {
+        return "Você está em uma caverna, um pouco da luz do sol entra por uma abertura no alto, você vê uma ponte de cordas cruzando por cima de você, há um poço no meio da sala.";
+    }
+
+    acoes(ctx: Contexto) {
+        return {
+            "N": Labirinto3,
+            "S": Labirinto6,
+            "DESCER": () => {
+                const result = this.obterItensPorNome(itensPadrao.Corda).at(0);
+                if(result) {
+                    ctx.escrevaln("Você desce a corda e chega ao fundo do poço.");
+                    return Poco;
+                } else {
+                    return "Você não tem como descer, não há nenhuma corda aqui.";
+                }
+            }
+        };
+    }
+}
+
+class Poco extends SalaBase {
+    static nome = "Poco";
+    static estadoInicial = (): Estado => ({ luz: false });
+    static itensIniciais = (): ItemInicial[] => [{ 
+        item: itensPadrao.Pedra, 
+        quantidade: 5
+    }];
+
+    descricao(ctx: Contexto) {
+        return "Este é um poço no fundo da caverna.";
+    }
+
+    acoes(ctx: Contexto) {
+        return {
+            "SUBIR": async () => {
+                // A FAZER: essa é a melhor forma?
+                await ctx.moverParaSala(Labirinto3);
+                const result = ctx.sala.obterItensPorNome(itensPadrao.Corda).at(0);
+                if(result) {
+                    ctx.escrevaln("Você sobe a corda e chega de volta na sala com o poço.");
+                } else {
+                    await ctx.moverParaSala(Poco);
+                    return "Você não tem como subir, não há nenhuma corda descendo até aqui.";
+                }
+            }
+        };
+    }
+}
+
+class Labirinto4 extends Labirinto {
+    static nome = "Labirinto4";
+    static estadoInicial = (): Estado => ({ luz: false });
+
+    acoes(ctx: Contexto) {
+        return {
+            "N": Labirinto1,
+            "O": Labirinto7,
+            "L": Labirinto5
+        };
+    }
+}
+
+class Labirinto5 extends Labirinto {
+    static nome = "Labirinto5";
+    static estadoInicial = (): Estado => ({ luz: false });
+
+    acoes(ctx: Contexto) {
+        return {
+            "N": Labirinto2,
+            "O": Labirinto4,
+            "L": Labirinto6
+        };
+    }
+}
+
+class Labirinto6 extends Labirinto {
+    static nome = "Labirinto6";
+    static estadoInicial = (): Estado => ({ luz: false });
+
+    acoes(ctx: Contexto) {
+        return {
+            "N": Labirinto3,
+            "O": Labirinto5       
+        };
+    }
+}
+
+class Labirinto7 extends Labirinto {
+    static nome = "Labirinto7";
+    static estadoInicial = (): Estado => ({ luz: false });
+
+    acoes(ctx: Contexto) {
+        return {
+            "N": Labirinto7,
+            "O": Labirinto4,
+            "L": Labirinto8
+        };
+    }
+}
+
+class Labirinto8 extends Labirinto {
+    static nome = "Labirinto8";
+    static estadoInicial = (): Estado => ({ luz: false });
+    static itensIniciais = (): ItemInicial[] => [{ 
+        item: itensPadrao.Corda, 
+        quantidade: 1
+    }];
+
+    acoes(ctx: Contexto) {
+        return {
+            "N": Labirinto5,
+            "O": Labirinto7,
+            "L": Labirinto9
+        };
+    }
+}
+
+class Labirinto9 extends Labirinto {
+    static nome = "Labirinto9";
+    static estadoInicial = (): Estado => ({ luz: false });
+
+    descricao(ctx: Contexto): string {
+        return "Todos os lados há passagens, tudo igual, pela parede há degraus que levam para parte de cima da caverna.";
+    }
+
+    acoes(ctx: Contexto) {
+        return {
+            "N": Labirinto6,
+            "O": Labirinto8,
+            "SUBIR": Caverna        
+        };
+    }
+}
+const salasLabirinto = {Labirinto1, Labirinto2, Labirinto3, Labirinto4, Labirinto5, Labirinto6, Labirinto7, Labirinto8, Labirinto9};
+
+class Caverna extends SalaBase {
+    static nome = "Caverna";
+    static estadoInicial = (): Estado => ({ luz: true });
+
+    descricao(ctx: Contexto): MaybePromise<string | void> {
+        return "Você está no alto de uma caverna, bem alto uma abertura ilumina o local, cruzando um abismo há uma ponte de cordas ao leste, parece bem frágil, O que será que tem lá?";
+    }
+
+    acoes(ctx: Contexto) {
+        return {
+            "DESCER": Labirinto9,
+            "L": () => {
+                let pedras = ctx.jogador.obterItensPorNome(itensPadrao.Pedra).at(0);
+                if(pedras && pedras.item.quantidade > 1) {
+                    ctx.escrevaln("Seu peso faz a ponte balançar e você cai...");
+                    const [nome, classeSala] = Object.entries(salasLabirinto)[Math.floor(Math.random() * 9)];
+                    return classeSala;
+                } else {
+                    return Tesouro;
+                }
+            },
+        };
+    }
+}
+
+class BauTesouro extends entidadesContainer.Bau {
+    static nome = "BauTesouro";
+    static estadoInicial = () => ({ aberto: false });
+
+    descricao(ctx: Contexto) {
+        const pedras = this.onde.obterItensPorNome(itensPadrao.Pedra).at(0);
+        const quantas = pedras?.item.quantidade || 0;
+        const descrPedestal = quantas === 0 ? " sem nada neles" : quantas === 1 ? ", um deles tem uma pedra em cima" : quantas === 2 ? ", cada uma com uma pedra" : ", mas parece que tem pedras demais aqui";
+        if(this.estaAberto()) {
+            return `Grande baú aberto no centro da sala. há dois pedestais em cada lado do baú${descrPedestal}.`;
+        } else {
+            return `Grande baú fechado no centro da sala, há dois pedestais em cada lado do baú${descrPedestal}.`;
+        }
+    }
+    
+    acoes(ctx: Contexto, extra?: Estado | null) {
+        const pedras = this.onde.obterItensPorNome(itensPadrao.Pedra).at(0);
+        if(this.estaAberto()) {
+            return {
+                "FECHAR": async () => {
+                    if(!pedras || pedras.item.quantidade !== 2) {
+                        return "Você não consegue alcançar o baú para fechá-lo.";
+                    }
+                    
+                    ctx.escrevaln("Você sobe nas pedras e fecha o baú.");
+                    await this.fechar(ctx);
+                }
+            };
+        } else {
+            return {
+                "ABRIR": async () => {
+                    if(!pedras) {
+                        return "O baú está muito alto, você não consegue alcançá-lo, se tivesse algo para subir...";
+                    } else if(pedras.item.quantidade === 1) {
+                        return "Você sobe na pedra mas ainda não alcança o baú.";
+                    } else if (pedras.item.quantidade > 2) {
+                        return "Parece que tem pedras demais aqui, nem consegue ver o baú direito.";
+                    }
+                    
+                    ctx.escrevaln("Você sobe nas pedras e alcança o baú, abrindo-o com facilidade.");
+                    await this.abrir(ctx);
+                }
+            };
+        }
+    }
+}
+
+class Tesouro extends SalaBase {
+    static nome = "Tesouro";
+    static estadoInicial = (): Estado => ({ luz: false });
+    static entidadesIniciais = (): EntidadeInicial[] => [{
+        entidade: BauTesouro,
+        estadoInicial: { aberto: false },
+        itensIniciais: [{
+            item: itensPadrao.Moedas,
+            quantidade: 100
+        }]
+    }]
+
+    descricao(ctx: Contexto) {
+        return "Você está em uma sala de pedra decorada";
+    }
+
+    acoes(ctx: Contexto) {
+        return {
+            "O": () => {
+                let pedras = ctx.jogador.obterItensPorNome(itensPadrao.Pedra).at(0);
+                if(pedras && pedras.item.quantidade > 1) {
+                    ctx.escrevaln("Seu peso faz a ponte balançar e você cai...");
+                    const [nome, classeSala] = Object.entries(salasLabirinto)[Math.floor(Math.random() * 9)];
+                    return classeSala;
+                } else {
+                    return Caverna;
+                }
+            }
         };
     }
 }
@@ -374,5 +633,12 @@ class Labirinto1 extends SalaBase {
 export const salaasInicio = {
     Quarto,
     Inicio,
-    Labirinto1
+    Poco,
+    Caverna,
+    Tesouro,
+    ...salasLabirinto
+};
+
+export const entidadesInicio = {
+    BauTesouro
 };

@@ -128,7 +128,7 @@ export class Contexto {
             }
             salaEntidades.push(entidadeConfig);
 
-            if(entidade.categoria === 'JOGADOR' && entidade.username === username) {
+            if(entidade.tipo === 'JOGADOR' && entidade.username === username) {
                 jogador = entidadeConfig as EntidadeJogador;
             }
         }
@@ -175,18 +175,19 @@ export class Contexto {
                 this.escrevaln(descr);
             }            
             const descricaoEntidade = this.obterTexto();
-
-            const itens = await this._descricaoItens(e.itens);
+            const { itens, filhos } = e.getFilhosVisiveis();
+            const descrItens = await this._descricaoItens(itens);
+            const descrFilhos: any = await this._descricaoEntidades(filhos);
             
             descricaoEntidades.push({
                 id: e.entidade.id,
-                categoria: e.entidade.categoria,
                 tipo: e.entidade.tipo,
                 username: e.entidade.username,
                 atualizadoEm: e.entidade.atualizadoEm,
                 descricao: descricaoEntidade,
                 acoes: Object.keys(acoes).filter(a => !a.startsWith("$")),
-                itens: itens,
+                itens: descrItens,
+                filhos: descrFilhos
             });
         }
         return descricaoEntidades;
@@ -197,7 +198,7 @@ export class Contexto {
 
         const [descricaoJogador] = await this._descricaoEntidades([this.jogador]);
         
-        const temLuz = this.sala.temLuz();
+        /*const temLuz = this.sala.temLuz();
         if(!temLuz) {
             this.escrevaln("Está muito escuro, você não consegue ver nada.");
             const descricaoSala = this.obterTexto();
@@ -218,18 +219,25 @@ export class Contexto {
                     entidades: [],
                 }
             };
+        }*/
+
+        let descricaoSala = "";
+        let acoes = {};
+        if(!this.sala.estaVisivel()) {
+            this.escrevaln("Está muito escuro, você não consegue ver nada.");
+            descricaoSala = this.obterTexto();
+        } else {
+            acoes = await this.sala._acoes(this);
+            const descr = "$DESCRICAO" in acoes ? await execArrowOrValue(acoes["$DESCRICAO"]) : "";
+            if(descr && typeof descr === "string") {
+                this.escrevaln(descr);
+            }
+            descricaoSala = this.obterTexto();
         }
 
-
-        const acoes = await this.sala._acoes(this);
-        const descr = "$DESCRICAO" in acoes ? await execArrowOrValue(acoes["$DESCRICAO"]) : "";
-        if(descr && typeof descr === "string") {
-            this.escrevaln(descr);
-        }
-        const descricaoSala = this.obterTexto();
-
-        const descricaoItensNochao = await this._descricaoItens(this.sala.itens);
-        const descricaoEntidades = await this._descricaoEntidades(this.sala.entidades.filter(e => e.entidade.id !== this.jogador.entidade.id));
+        const { itens, entidades } = this.sala.getFilhosVisiveis();
+        const descricaoItensNochao = await this._descricaoItens(itens);
+        const descricaoEntidades = await this._descricaoEntidades(entidades.filter(e => e.entidade.id !== this.jogador.entidade.id));
 
         return {
             resposta: resposta,
@@ -248,33 +256,6 @@ export class Contexto {
             },
         };
     }
-
-    
-    /*async temLuz(): Promise<boolean> {
-        const sala = await this.getSala();
-        if(sala.estado?.luz === true) return true;
-
-        let chao = await this.getItensNoChao();
-        for(let obj of chao) {
-            if(obj.estado?.luz === true) return true;
-        }
-
-        let mochila = await this.getMochila();
-        for(let obj of mochila) {
-            if(obj.estado?.luz === true) return true;
-        }
-
-        let entidades = await this.getEntidadesNaSala();
-        for(let ent of entidades) {
-            if(ent.estado?.luz === true) return true;
-            for(let obj of ent.mochila) {
-                if(obj.estado?.luz === true) return true;
-            }
-        }
-
-        return false;
-    }*/
-
     
     // =========================================================================
     //                 Funções que alteram o estado do jogo  
@@ -348,6 +329,30 @@ export class Contexto {
             sala.estado = null;
         }
         await SalaRepository.atualizar(db, sala.id, { estado: sala.estado });
+    }
+
+    async alterarEntidade(entidade: EntidadeBase, { ondeId, estado }: { 
+        ondeId?: string | null,
+        estado?: Estado | null,
+    }) {
+        const ent = entidade.entidade;
+        if(ondeId === null) {
+            // Deleta a entidade
+            await EntidadeRepository.deletar(db, ent.ondeId, ent.id);
+        } else {
+            // Move a entidade para outro lugar
+            if(estado) {
+                estado = { ...(ent.estado || {}), ...estado };
+            }
+            const result = await EntidadeRepository.atualizar(db, ent.id, { ondeId: ondeId, estado: estado });
+            ent.estado = result.estado;
+        }
+        // A FAZER: atualizar só em memória.
+
+        const info = await Contexto.carregar(this.jogador.entidade.username!, this.sala.sala.id, this.global.sala);
+        this.sala = info.sala;
+        this.global = info.global;
+        this.jogador = info.jogador;
     }
     
     // =========================================================================

@@ -1,6 +1,6 @@
 import z from "zod";
 import { type DocPaths } from "../utils/docs.ts";
-import { respostaSituacao } from "./schemas.ts";
+import { acaoExtraSchema, respostaSituacao } from "./schemas.ts";
 
 export const itemDocs = {
     /*"/item/pegar": {
@@ -55,10 +55,7 @@ export const itemDocs = {
                         description: "Ação a ser realizada",
                         example: "usar",
                     }),
-                    extra: z.record(z.string(), z.any()).optional().meta({
-                        description: "Dados extras para a ação, se necessário",
-                        example: { chave: "valor" },
-                    }),
+                    extra: acaoExtraSchema.optional()
                 }),
                 response: respostaSituacao
             }

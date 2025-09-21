@@ -3,11 +3,12 @@ import type { Item } from "../db/itemSchema.ts";
 import type { Sala } from "../db/salaSchema.ts";
 import type { Contexto } from "./contexto.ts";
 import type { EntidadeBase, EntidadeBaseStatic } from "./entidades/base.ts";
+import { entidadesContainer } from "./entidades/container.ts";
 import { EntidadeJogador } from "./entidades/jogador.ts";
 import type { ItemBase, ItemBaseStatic } from "./itens/base.ts";
 import { itensPadrao } from "./itens/inicio.ts";
 import { SalaBase, SalaGlobal, type SalaBaseStatic } from "./salas/base.ts";
-import { salaasInicio } from "./salas/inicio.ts";
+import { entidadesInicio, salaasInicio } from "./salas/inicio.ts";
 import type { ArrowOrValue, Estado, MaybePromise } from "./types.ts";
 
 
@@ -44,8 +45,8 @@ for(let classe of _itensArray) {
 }
 
 const _salasArray: (typeof SalaBase & SalaBaseStatic)[] = [
+    SalaGlobal,
     ...Object.values(salaasInicio),
-    SalaGlobal
 ];
 export const _salas: Map<string, typeof SalaBase & SalaBaseStatic> = new Map();
 for(let classe of _salasArray) {
@@ -53,7 +54,9 @@ for(let classe of _salasArray) {
 }
 
 const _entidadesArray: (typeof EntidadeBase & EntidadeBaseStatic)[] = [
-    EntidadeJogador
+    EntidadeJogador,
+    ...Object.values(entidadesContainer),
+    ...Object.values(entidadesInicio)
 ];
 export const _entidades: Map<string, typeof EntidadeBase & EntidadeBaseStatic> = new Map();
 for(let classe of _entidadesArray) {

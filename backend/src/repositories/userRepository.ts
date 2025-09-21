@@ -28,7 +28,6 @@ export class UserRepository {
 
             const resultEntity = await tx.insert(tableEntidades).values({
                 username: dados.username,
-                categoria: "JOGADOR",
                 tipo: "JOGADOR",
                 ondeId: salaInicial.id,
                 estado: { vivo: 1 },
