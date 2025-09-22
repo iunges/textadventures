@@ -66,7 +66,7 @@ try {
         insertEntidades.push({
             id: entidadeId,
             tipo: entidade.nome,
-            nome: entidadeInfo.nome || null,
+            nome: entidadeInfo.nome || entidade.nome,
             ondeId: salaId,
             estado: estadoInicial,
             refId: refId || null,

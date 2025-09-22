@@ -94,7 +94,7 @@ class Estrada extends SalaBase {
         return {
             "O": Clareira,
             "S": PortaoDaCidade,
-            "N": Clareira
+            "N": Estrada
         };
     }
 }

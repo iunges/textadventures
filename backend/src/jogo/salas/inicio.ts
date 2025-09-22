@@ -356,6 +356,10 @@ class Caverna extends SalaBase {
         return {
             "DESCER": Labirinto9,
             "L": () => {
+                if(ctx.jogador.terminouTutorial()) {
+                    return "A ponte está toda quebrada, não dá mais para atravessar.";
+                }
+
                 let pedras = ctx.jogador.obterItensPorNome(itensPadrao.Pedra).at(0);
                 if(pedras && pedras.item.quantidade > 1) {
                     ctx.escrevaln("Seu peso faz a ponte balançar e você cai...");
@@ -409,6 +413,7 @@ class BauTesouro extends entidadesContainer.Bau {
                     }
                     
                     ctx.escrevaln("Você sobe nas pedras e alcança o baú, abrindo-o com facilidade.");
+                    ctx.escrevaln("Depois de todo esse esforço você fica até com sono...");
                     await this.abrir(ctx);
                 }
             };
