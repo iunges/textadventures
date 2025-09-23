@@ -38,13 +38,15 @@ export function termClear() {
     term.clear();
 }
 
+let optionsMode = false;
+let options: string[] = [];
 let waitingPrompt: ((input: string | Error) => void) | null = null;
 export function prompt(...str: unknown[]): Promise<string> {
-    command = '';
+    command = optionsMode ? (options[0] || "") : "";
     const last = str.pop() || "> ";
     termPrint(...str);
     
-    term.write(""+last);
+    term.write(""+last+command);
     return new Promise<string>((resolve, reject) => {
         waitingPrompt = (input: string | Error) => {
             waitingPrompt = null;
@@ -59,10 +61,25 @@ export function prompt(...str: unknown[]): Promise<string> {
 
 let passwordMode = false;
 export async function passwordPrompt(...str: unknown[]) {
+    try {
     passwordMode = true;
     const result = await prompt(...str);
-    passwordMode = false;
     return result;
+    } finally {
+        passwordMode = false;
+    }
+}
+
+export async function optionsPrompt(_options: string[], ...str: unknown[]) {
+    if(_options.length === 0) throw new Error("Nenhuma opção fornecida");
+    try {
+        optionsMode = true;
+        options = _options;
+        return await prompt(...str);
+    } finally {
+        optionsMode = false;
+        options = [];
+    }
 }
 
 let command = '';
@@ -109,6 +126,9 @@ function onInput(term: Terminal, text: string) {
     _prompt();
 }
 
+const commandHistory: string[] = [];
+let historyIndex: number = 0;
+
 function runFakeTerminal() {
     if ((term as any)._initialized) {
         return;
@@ -130,6 +150,12 @@ function runFakeTerminal() {
                 }
                 break;
             case '\r': // Enter
+                if(!optionsMode) {
+                    if (command.trim().length > 0) {
+                        commandHistory.push(command);
+                    }
+                    historyIndex = commandHistory.length; // Reseta o índice para o final
+                }
                 onInput(term, command);
                 command = '';
                 break;
@@ -142,6 +168,60 @@ function runFakeTerminal() {
                     }
                 }
                 break;
+            case '\x1b[A': // Seta para Cima
+                if(optionsMode) {
+                    // Cicla pelas opções
+                    const currentOption = command.trim().toLowerCase() || options[0].toLowerCase();
+                    let currentIndex = options.findIndex(o => o.toLowerCase() === currentOption);
+                    currentIndex = (currentIndex - 1 + options.length) % options.length;
+                    // Limpa a linha atual
+                    for (let i = 0; i < command.length; i++) {
+                        term.write('\b \b');
+                    }
+                    command = options[currentIndex];
+                    term.write(command);
+                } else {
+                    if (historyIndex > 0) {
+                        historyIndex--;
+                        // Limpa a linha atual
+                        for (let i = 0; i < command.length; i++) {
+                            term.write('\b \b');
+                        }
+                        command = commandHistory[historyIndex];
+                        term.write(command);
+                    }
+                }
+                break;
+
+            case '\x1b[B': // Seta para Baixo
+                if(optionsMode) {
+                    // Cicla pelas opções
+                    const currentOption = command.trim().toLowerCase() || options[0].toLowerCase();
+                    let currentIndex = options.findIndex(o => o.toLowerCase() === currentOption);
+                    currentIndex = (currentIndex + 1) % options.length;
+                    // Limpa a linha atual
+                    for (let i = 0; i < command.length; i++) {
+                        term.write('\b \b');
+                    }
+                    command = options[currentIndex];
+                    term.write(command);
+                } else if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    // Limpa a linha atual
+                    for (let i = 0; i < command.length; i++) {
+                        term.write('\b \b');
+                    }
+                    command = commandHistory[historyIndex];
+                    term.write(command);
+                } else if (historyIndex === commandHistory.length - 1) {
+                    // Se estiver no último item, ir para baixo limpa o comando
+                    historyIndex++;
+                     for (let i = 0; i < command.length; i++) {
+                        term.write('\b \b');
+                    }
+                    command = "";
+                }
+            break;
             default: // Print all other characters for demo
                 if (e >= String.fromCharCode(0x20) && e <= String.fromCharCode(0x7E) || e >= '\u00a0') {
                     command += e;

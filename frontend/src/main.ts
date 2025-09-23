@@ -240,9 +240,7 @@ addCommand("ajuda", {
 });
 
 try {
-    const info = await fetchClient.info();
-    termPrint("Olá novamente", info.jogador.username);
-    
+    const info = await fetchClient.info();    
     await principal(info);
 } catch(e) {
     console.error(e);

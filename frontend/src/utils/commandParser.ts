@@ -21,8 +21,6 @@ function normalize(text: string): string {
 
 const DIRECOES: string[] = [Acao.N, Acao.S, Acao.L, Acao.O, Acao.NE, Acao.NO, Acao.SE, Acao.SO, Acao.Subir, Acao.Descer, Acao.Entrar, Acao.Sair];
 
-const ACOES_QUANTIDADE: string[] = [Acao.Pegar, Acao.Largar, Acao.Colocar, Acao.Dar, Acao.Jogar, Acao.Usar];
-
 export class CommandParser<T> {
     private rawCommand: string;
     private lastArgsi: number;
@@ -163,6 +161,57 @@ export class CommandParser<T> {
 
         return { acao: null, confidence: 0, texto: null };
     }
+
+    private proximoAlvo(esperarQuantidade: boolean, obrigatorioAchar: boolean) {
+        let quantidade: number | undefined = undefined;
+        let oq = this.proximoArgumento();
+
+        // Pegar 3 pedras
+        if(oq.texto && esperarQuantidade && oq.texto.match(/^\d+$/)) {
+            quantidade = parseInt(oq.texto);
+            if(quantidade <= 0) {
+                throw new ParserError(`A quantidade deve ser maior que zero.`);
+            }
+
+            oq = this.proximoArgumento();
+        }
+
+        // Se não informar o alvo, pode ser qualquer coisa
+        if(!oq.texto) {
+            return {alvo: this.findBestMatch("", this.context.alvos), oq, quantidade};
+        }
+
+        // Encontrar o alvo
+        const alvo = this.findBestMatch(oq.texto, this.context.alvos);
+        if(alvo.length === 0) {
+            // Se o alvo for obrigatório, erro, senão é porque não se referiu a nada específico
+            this.argsi = this.lastArgsi;
+            if(!obrigatorioAchar) {
+                return {alvo: [], oq, quantidade};
+            } //else {
+                // Comando que precisa de alvo, mas não tem, pode ser qualquer um
+                //return {alvo: this.findBestMatch("", this.context.alvos), oq, quantidade};
+            //}
+            throw new ParserError(`Não há nenhum '${oq.texto}' aqui`);
+        }
+
+        // Ignorar outras palavras que fazem parte do mesmo objeto/entidade. ex: pegar livro de pedra
+        // A FAZER: usar isso para melhorar a desambiguação
+        /*if(alvo.length === 1) while(true) {
+            const prox = this.proximoArgumento();
+            if(!prox.texto) break;
+
+            // Deve ignorar apenas se der EXATAMENTE 1 match, melhor resolver depois na desambiguação
+            const proxAlvo = this.findBestMatch(prox.texto, this.context.alvos);
+            if(proxAlvo.length === 1 && proxAlvo[0].match === alvo[0].match) {
+                continue;
+            }
+            this.argsi = this.lastArgsi;
+            break;
+        }*/
+
+        return {alvo, oq, quantidade};
+    }
     
     public parse() {
         let cmd = this.proximoComando();
@@ -185,31 +234,12 @@ export class CommandParser<T> {
         let acao = cmd.acao as AcaoValue;
         let quantidade: number | undefined = undefined;
 
-        /*if(acoesConfig[acao].args === 0) {
+        if(acoesConfig[acao].maxArgs === 0) {
             return { acao, quantidade, alvoA: [], alvoB: [], resto: this.args.slice(this.argsi).join(" ") };
-        }*/
+        }
         
-        let oq = this.proximoArgumento();
-
-        // Pegar 3 pedras
-        if(oq.texto && ACOES_QUANTIDADE.includes(acao) && oq.texto.match(/^\d+$/)) {
-            quantidade = parseInt(oq.texto);
-            if(quantidade <= 0) {
-                throw new ParserError(`A quantidade deve ser maior que zero.`);
-            }
-
-            oq = this.proximoArgumento();
-        }
-
-        if(!oq.texto) {
-            // Comando que precisa de alvo, mas não tem, pode ser qualquer um
-            return { acao, quantidade, alvoA: this.findBestMatch("", this.context.alvos), alvoB: this.findBestMatch("", this.context.alvos), resto: this.args.slice(this.lastArgsi).join(" ") };
-        }
-
-        const alvoA = this.findBestMatch(oq.texto, this.context.alvos);
-        if(alvoA.length === 0) {
-            throw new ParserError(`Não há nenhum '${oq.texto}' aqui`);
-        }
+        const { alvo: alvoA, oq, quantidade: _quantidade } = this.proximoAlvo(acoesConfig[acao].quantidade === true, acoesConfig[acao].args >= 1);
+        quantidade = _quantidade;
         
         if(acao === Acao.Usar) {
             // usar <obj2> para? <cmd> <obj1>
@@ -229,47 +259,37 @@ export class CommandParser<T> {
             // Muda o comando pois refere-se a algo
             if(acao === Acao.Largar) {
                 acao = Acao.Colocar;
-            }
-
-            if(acao === Acao.Mover || acao === Acao.Tocar) {
+                this.argsi = this.lastArgsi;
+            } else if(acao === Acao.Mover || acao === Acao.Tocar) {
                 acao = Acao.Virar;
-            }
-
-            if(acao === Acao.Abrir) {
+                this.argsi = this.lastArgsi;
+            } else if(acao === Acao.Abrir) {
                 acao = Acao.Destrancar;
-            }
-
-            if(acao === Acao.Fechar) {
+                this.argsi = this.lastArgsi;
+            } else if(acao === Acao.Fechar) {
                 acao = Acao.Trancar;
+                this.argsi = this.lastArgsi;
             }
 
             // Colocar no chão vira largar
-            if(acao === Acao.Colocar && this.extrairComando(comoq.texto).at(0)?.match === Acao.Chao) {
+            else if(acao === Acao.Colocar && this.extrairComando(comoq.texto).at(0)?.match === Acao.Chao) {
                 acao = Acao.Largar;
-                comoq = { confidence: 0, texto: null };
             }
 
             // Colocar na mochila vira pegar
-            if(acao === Acao.Colocar && this.extrairComando(comoq.texto).at(0)?.match === Acao.Mochila) {
+            else if(acao === Acao.Colocar && this.extrairComando(comoq.texto).at(0)?.match === Acao.Mochila) {
                 acao = Acao.Pegar;
-                comoq = { confidence: 0, texto: null };
+            } else {
+                this.argsi = this.lastArgsi;
             }
         }
 
-        /*if(acoesConfig[acao].args === 1) {
-            return { acao, quantidade, alvoA: alvoA, alvoB: [], resto: this.args.slice(this.lastArgsi).join(" ") };
-        }*/
-
-        if(!comoq.texto) {
-            //throw new Error(`Precisa se referir a algo para ${acao}`);
-            // Comando que precisa de dois alvos, mas só tem um, pode ser qualquer um 
-            return { acao, quantidade, alvoA: alvoA, alvoB: this.findBestMatch("", this.context.alvos), resto: this.args.slice(this.lastArgsi).join(" ") };
+        if(acoesConfig[acao].maxArgs === 1) {
+            return { acao, quantidade, alvoA: alvoA, alvoB: [], resto: this.args.slice(this.argsi).join(" ") };
         }
 
-        const alvoB = this.findBestMatch(comoq.texto, this.context.alvos) || { match: null };
-        if(alvoB.length === 0) {
-            throw new ParserError(`Não há nenhum '${comoq.texto}' aqui`);
-        }
+        const { alvo: alvoB, oq: oq2, quantidade: _quantidade2 } = this.proximoAlvo(acoesConfig[acao].quantidade === true, acoesConfig[acao].args >= 2);
+        quantidade = quantidade !== undefined ? quantidade : _quantidade2;
 
         return { acao, quantidade, alvoA: alvoA, alvoB: alvoB, resto: this.args.slice(this.argsi).join(" ") };
     }

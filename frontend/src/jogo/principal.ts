@@ -1,7 +1,8 @@
-import { passwordPrompt, prompt, termPrint } from "../terminal";
+import { optionsPrompt, passwordPrompt, prompt, termPrint } from "../terminal";
 import { APIError, fetchClient, type RespostaEntidades, type RespostaItens, type RespostaJogoInfo, type RespostaSala, type RespostaSituacao } from "../utils/fetchApi";
 import { CommandParser, ParserError } from "../utils/commandParser";
 import { Acao, type AcaoValue, acoesConfig } from "../utils/comandoConfig";
+import anyAscii from "any-ascii";
 
 type ComponenteAtualizavel = { id: string, atualizadoEm: string };
 function mudouAlgo(_obj1: undefined | null | ComponenteAtualizavel | ComponenteAtualizavel[], _obj2?: null | ComponenteAtualizavel | ComponenteAtualizavel[]) {
@@ -146,22 +147,27 @@ export const desambiguar = async (
             entidade.push(alvo);
         } else {
             if(arg !== 1 || alvo.acoes?.includes(acao))
-            item.push(alvo as RespostaItens);
+            item.push(alvo);
         }
     }
 
     if((item.length + entidade.length) > 1 && (!acao || acoesConfig[acao as AcaoValue].args >= arg)) {
         termPrint(mensagem);
         let k = 0;
+        let options = [];
         for(; k < item.length; k++) {
             const i = item[k];
-            termPrint(`  ${String.fromCharCode(k + "A".charCodeAt(0))}: ${i.quantidade} ${i.descricao?.trim() || ""} (${i.acoes?.join(", ")})`);
+            let letter = String.fromCharCode(k + "A".charCodeAt(0));
+            termPrint(`  ${letter}: ${i.quantidade} ${i.descricao?.trim() || ""} (${i.acoes?.join(", ")})`);
+            options.push(letter);
         }
-        for(; k < entidade.length; k++) {
-            const e = entidade[k];
-            termPrint(`  ${String.fromCharCode(k + "A".charCodeAt(0))}: ${e.descricao?.trim() || ""} (${e.acoes?.join(", ")})`);
+        for(; k < item.length + entidade.length; k++) {
+            const e = entidade[k - item.length];
+            let letter = String.fromCharCode(k + "A".charCodeAt(0));
+            termPrint(`  ${letter}: ${e.descricao?.trim() || ""} (${e.acoes?.join(", ")})`);
+            options.push(letter);
         }
-        const escolha = (await prompt("Escolha um: ")).trim();
+        const escolha = (await optionsPrompt(options, "Escolha um: ")).trim();
         const escolhaNum = escolha.toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
         if(isNaN(escolhaNum) || escolhaNum < 0) {
             termPrint("Escolha inválida.");
@@ -185,18 +191,23 @@ export const desambiguar = async (
 
 export const principal = async (jogoInfo?: RespostaJogoInfo) => {
     let situacao: RespostaSituacao | null = null;
+    let exibirBannerOla = true;
     while(true) {
         try {
             if(!jogoInfo || !jogoInfo.jogador || !situacao || !situacao.sala || !situacao.jogador) {
                 if(!jogoInfo || !jogoInfo.jogador) {
                     jogoInfo = await fetchClient.info();
+                    exibirBannerOla = true;
+                }
+                if(exibirBannerOla) {
                     termPrint("Olá novamente", jogoInfo.jogador.username);
                     termPrint("Online última vez em", new Date(jogoInfo.jogador.atualizadoEm).toLocaleString());
                     termPrint("");
                     if(jogoInfo.usuariosCadastrados !== undefined && jogoInfo.usuariosOnline !== undefined) {
-                        termPrint(`Há ${jogoInfo.usuariosCadastrados} usuários cadastrados, ${jogoInfo.usuariosOnline} online agora.`);
+                        termPrint(`${jogoInfo.usuariosOnline} usuários online agora, ${jogoInfo.usuariosCadastrados} cadastrados.`);
                     }
                     termPrint("");
+                    exibirBannerOla = false;
                 }
                 let salaId = situacao?.sala?.id || situacao?.jogador?.ondeId || jogoInfo?.jogador?.ondeId;
                 situacao = descreverTudo(await fetchClient.salaOlhar(salaId), null);
@@ -210,6 +221,11 @@ export const principal = async (jogoInfo?: RespostaJogoInfo) => {
 
             const alvoA = await desambiguar("Seja mais específico: ", acao, alvos, _alvoA, 1);
             const alvoB = await desambiguar("Com oq? ", acao, alvos, _alvoB, 2);
+            let texto = resto?.trim() || undefined;
+
+            if(acao && acoesConfig[acao].texto === true && !texto) {
+                texto = anyAscii((await prompt() || "").replaceAll(/[\r\n\t]/g," ")).trim();
+            }
 
             if(!acao || acao === Acao.Mochila || (!alvoA.entidade && !alvoA.item && acao === Acao.Olhar)) {
                 // Apenas olhar ao redor
@@ -221,10 +237,10 @@ export const principal = async (jogoInfo?: RespostaJogoInfo) => {
             } else if(acao === Acao.Ajuda) {
                 termPrint("Você pode usar comandos como:");
                 termPrint("  norte");
-                termPrint("  pegar pedra");
-                termPrint("  largar 3 pedra");
                 termPrint("  abrir porta");
-                termPrint("  colocar no bau moedas");
+                termPrint("  pegar 1 pedra");
+                termPrint("  largar pedra");
+                termPrint("  colocar no bau 100 moedas");
                 termPrint("");
                 termPrint("  mochila - para ver o que você está carregando");
                 termPrint("  olhar - para olhar ao redor novamente");
@@ -246,6 +262,7 @@ export const principal = async (jogoInfo?: RespostaJogoInfo) => {
                     termPrint("  <Ação> <Alvo>");
                     termPrint("  <Ação> <Quantidade> <Alvo>");
                     termPrint("  <Ação> <AlvoA> <AlvoB>");
+                    termPrint("  <Ação> <AlvoA> <Quantidade> <AlvoB>");
                     termPrint("  usando <Alvo> <Ação>");
                     termPrint("  usando <AlvoA> <Ação> <AlvoB>");
                     termPrint("");
@@ -263,11 +280,11 @@ export const principal = async (jogoInfo?: RespostaJogoInfo) => {
                 break;
             } else {
                 if(alvoA.item) {
-                    situacao = descreverTudo(await fetchClient.itemAcao(situacao.sala.id, alvoA.item.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: resto || undefined }), situacao);
+                    situacao = descreverTudo(await fetchClient.itemAcao(situacao.sala.id, alvoA.item.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: texto || undefined }), situacao);
                 } else if(alvoA.entidade) {
-                    situacao = descreverTudo(await fetchClient.entidadeAcao(situacao.sala.id, alvoA.entidade.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: resto || undefined }), situacao);
+                    situacao = descreverTudo(await fetchClient.entidadeAcao(situacao.sala.id, alvoA.entidade.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: texto || undefined }), situacao);
                 } else {
-                    situacao = descreverTudo(await fetchClient.salaMover(situacao.sala.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: resto || undefined }), situacao);
+                    situacao = descreverTudo(await fetchClient.salaMover(situacao.sala.id, acao, { quantidade, item: alvoB.item?.id, entidade: alvoB.entidade?.id, texto: texto || undefined }), situacao);
                 }
             }
 
