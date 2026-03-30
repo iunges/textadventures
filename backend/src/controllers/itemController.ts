@@ -4,19 +4,31 @@ import { ControllerBase } from "./ControllerBase.ts";
 import { execArrowOrValue } from "../jogo/types.ts";
 import type { SalaBase, SalaBaseStatic } from "../jogo/salas/base.ts";
 import type { AcaoExtraPopulado } from "../jogo/objetoJogo.ts";
+import type { Contexto } from "../jogo/contexto.ts";
+import type { AcaoExtra } from "../docs/schemas.ts";
+import type { AcaoValue } from "../jogo/comandos/comandoConfig.ts";
 
 export class ItemController extends ControllerBase {
     static acaoItem: RequestHandler = async (req, res) => {
         const { ctx, body, params } = await this.loadRequest(itemDocs["/sala/{salaId}/item/{id}/{acao}"].post.schema, req, res);
         if(!ctx) return;
         
+        await this._executarAcao(ctx, body, params);
+
+        await this.sendResponse(ctx, req, res);
+    }
+    
+    static async _executarAcao(ctx: Contexto, body: AcaoExtra | undefined, params: {
+        salaId: string;
+        id: string;
+        acao: AcaoValue;
+    }) {
         const itemId = params.id;
 
         const achouObjeto = ctx.getItemVisivel(itemId);
         
         if(!achouObjeto) {
             ctx.escrevaln("Não tem isso aqui.");
-            await this.sendResponse(ctx, req, res);
             return;
         }
 
@@ -42,7 +54,5 @@ export class ItemController extends ControllerBase {
                 }
             }
         }
-
-        await this.sendResponse(ctx, req, res);
     }
 }

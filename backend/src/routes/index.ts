@@ -7,6 +7,7 @@ import { SalaController } from "../controllers/salaController.ts";
 import { EntidadeController } from "../controllers/entidadeController.ts";
 import { ItemController } from "../controllers/itemController.ts";
 import { JogoError } from "../jogo/types.ts";
+import { TextoController } from "../controllers/textoController.ts";
 
 const routes = (app: Express) => {
 	// Só fazer log das rotas se estiver em desenvolvimento, desativar em produção
@@ -25,6 +26,10 @@ const routes = (app: Express) => {
 	router.post("/sala/:salaId/item/:id/:acao", authMiddleware, ItemController.acaoItem);
 	router.post("/sala/:salaId/entidade/:id/:acao", authMiddleware, EntidadeController.acaoEntidade);
 	router.post("/sala/:salaId/:acao", authMiddleware, SalaController.executarAcao);
+
+	router.post("/texto", authMiddleware, TextoController.processarTexto);
+	router.get("/texto", authMiddleware, TextoController.processarTexto);
+
 
     app.use(
         getDocsRouter(),

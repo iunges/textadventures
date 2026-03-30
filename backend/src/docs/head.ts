@@ -11,6 +11,7 @@ import { type ControllerSchema, type HTTPMethod, type ParsedRequest, type Parsed
 import z from 'zod';
 import { authDocs } from './authDocs.ts';
 import { entidadeDocs } from './entidadeDocs.ts';
+import { textoDocs } from './textoDocs.ts';
 
 // https://stackoverflow.com/questions/72133185/deploy-an-express-server-that-uses-express-static-to-serve-a-build-folder-to-ver
 
@@ -22,7 +23,8 @@ export const apiDocPaths = {
     ...salaDocs,
     ...itemDocs,
     ...authDocs,
-    ...entidadeDocs
+    ...entidadeDocs,
+    ...textoDocs
 };
 
 const generateOpenAPIDocs = (registry: OpenAPIRegistry) => {

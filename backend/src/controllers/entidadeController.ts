@@ -4,19 +4,31 @@ import { execArrowOrValue } from "../jogo/types.ts";
 import { entidadeDocs } from "../docs/entidadeDocs.ts";
 import type { SalaBase, SalaBaseStatic } from "../jogo/salas/base.ts";
 import type { AcaoExtraPopulado } from "../jogo/objetoJogo.ts";
+import type { Contexto } from "../jogo/contexto.ts";
+import type { AcaoExtra } from "../docs/schemas.ts";
+import type { AcaoValue } from "../jogo/comandos/comandoConfig.ts";
 
 export class EntidadeController extends ControllerBase {
     static acaoEntidade: RequestHandler = async (req, res) => {
         const { ctx, body, params } = await this.loadRequest(entidadeDocs["/sala/{salaId}/entidade/{id}/{acao}"].post.schema, req, res);
         if(!ctx) return;
         
+        await this._executarAcao(ctx, body, params);
+
+        await this.sendResponse(ctx, req, res);
+    }
+
+    static async _executarAcao(ctx: Contexto, body: AcaoExtra | undefined, params: {
+        salaId: string;
+        id: string;
+        acao: AcaoValue;
+    }) {
         const entidadeId = params.id;
         
         const achouEntidade = ctx.getEntidadeVisivel(entidadeId);
 
         if(!achouEntidade) {
             ctx.escrevaln("Não tem isso aqui.");
-            await this.sendResponse(ctx, req, res);
             return;
         }
 
@@ -43,7 +55,5 @@ export class EntidadeController extends ControllerBase {
                 }
             }
         }
-
-        await this.sendResponse(ctx, req, res);
     }
 }

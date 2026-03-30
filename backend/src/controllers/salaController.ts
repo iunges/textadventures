@@ -4,6 +4,9 @@ import { ControllerBase } from "./ControllerBase.ts";
 import { execArrowOrValue } from "../jogo/types.ts";
 import type { SalaBase, SalaBaseStatic } from "../jogo/salas/base.ts";
 import type { AcaoExtraPopulado } from "../jogo/objetoJogo.ts";
+import type { Contexto } from "../jogo/contexto.ts";
+import type { AcaoValue } from "../jogo/comandos/comandoConfig.ts";
+import type { AcaoExtra } from "../docs/schemas.ts";
 
 export class SalaController extends ControllerBase {
     static descreverSalaAtual: RequestHandler = async (req, res) => {
@@ -17,6 +20,15 @@ export class SalaController extends ControllerBase {
         const { ctx, body, params } = await this.loadRequest(salaDocs["/sala/{salaId}/{acao}"].post.schema, req, res);
         if(!ctx) return;
 
+        await this._executarAcao(ctx, body, params);
+
+        await this.sendResponse(ctx, req, res);
+    }
+
+    static async _executarAcao(ctx: Contexto, body: AcaoExtra | undefined, params: {
+        salaId: string;
+        acao: AcaoValue;
+    }) {
         const sala = ctx.sala;
 
         const { item, entidade, ..._extra} = body || {};
@@ -41,7 +53,5 @@ export class SalaController extends ControllerBase {
                 }
             }
         }
-
-        await this.sendResponse(ctx, req, res);
     }
 }

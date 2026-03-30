@@ -68,7 +68,96 @@ export const Acao = {
     Usar: "USAR",
     Chao: "CHAO",
 
+    // Só no frontend
+    Ajuda: "AJUDA",
+    Logout: "LOGOUT",
+    Cores: "CORES",
+    Chat: "CHAT",
+
+    // Utilização interna
     $Descricao: "$DESCRICAO",
     $AcaoAntes: "$ACAO_ANTES",
 } as const;
 export type AcaoValue = typeof Acao[keyof typeof Acao];
+
+export const acoesConfig: Record<AcaoValue, {sinonimos: string[], args: number, maxArgs: number, quantidade?: boolean, texto?: boolean}> = {
+    [Acao.N]: { sinonimos: ["N", "NORTE"], args: 0, maxArgs: 1 },
+    [Acao.S]: { sinonimos: ["S", "SUL"], args: 0, maxArgs: 1 },
+    [Acao.L]: { sinonimos: ["L", "LESTE"], args: 0, maxArgs: 1 },
+    [Acao.O]: { sinonimos: ["O", "OESTE"], args: 0, maxArgs: 1 },
+    [Acao.NO]: { sinonimos: ["NO", "NOROESTE"], args: 0, maxArgs: 1 },
+    [Acao.SE]: { sinonimos: ["SE", "SUDESTE"], args: 0, maxArgs: 1 },
+    [Acao.NE]: { sinonimos: ["NE", "NORDESTE"], args: 0, maxArgs: 1 },
+    [Acao.SO]: { sinonimos: ["SO", "SUDOESTE"], args: 0, maxArgs: 1 },
+    [Acao.Subir]: { sinonimos: ["C", "SUBIR", "CIMA", "ACIMA", "SOBE", "ERGUER", "LEVANTAR"], args: 0, maxArgs: 1 },
+    [Acao.Descer]: { sinonimos: ["D", "DESCER", "ABAIXO", "ABAIXAR"], args: 0, maxArgs: 1 },
+    [Acao.Entrar]: { sinonimos: ["E", "ENTRAR", "DENTRO"], args: 0, maxArgs: 1 },
+    [Acao.Sair]: { sinonimos: ["F", "SAIR", "FORA"], args: 0, maxArgs: 1 },
+
+    [Acao.Olhar]: { sinonimos: ["OLHAR", "EX", "EXAMINAR", "VER", "OBSERVAR", "INSPECIONAR", "INVESTIGAR", "PESQUISAR"], args: 1, maxArgs: 1 },
+    [Acao.Pegar]: { sinonimos: ["PEGAR", "CARREGAR", "SEGURAR"], args: 1, maxArgs: 1, quantidade: true },
+    [Acao.Largar]: { sinonimos: ["LARGAR", "SOLTAR"], args: 1, maxArgs: 1, quantidade: true },
+    [Acao.Mochila]: { sinonimos: ["I", "MOCHILA", "INVENTARIO", "BOLSA"], args: 0, maxArgs: 0 },
+
+    [Acao.Abrir]: { sinonimos: ["ABRIR"], args: 1, maxArgs: 1 },
+    [Acao.Fechar]: { sinonimos: ["FECHAR"], args: 1, maxArgs: 1 },
+    [Acao.Acender]: { sinonimos: ["ACENDER"], args: 1, maxArgs: 1 },
+    [Acao.Apagar]: { sinonimos: ["APAGAR"], args: 1, maxArgs: 1 },
+    [Acao.Ligar]: { sinonimos: ["LIGAR"], args: 1, maxArgs: 1 },
+    [Acao.Desligar]: { sinonimos: ["DESLIGAR"], args: 1, maxArgs: 1 },
+    [Acao.Mover]: { sinonimos: ["MOVER", "PUXAR", "REMOVER", "MEXER", "RETIRAR", "ARRASTAR", "DESLOCAR", "APROXIMAR", "BALANCAR", "DESENCAIXAR", "OSCILAR"], args: 1, maxArgs: 1 },
+    [Acao.Empurrar]: { sinonimos: ["EMPURRAR", "FORCAR", "IMPULSIONAR", "IMPELIR", "AFASTAR"], args: 1, maxArgs: 1 },
+    [Acao.Comer]: { sinonimos: ["COMER", "DEVORAR", "PROVAR", "MASTIGAR", "ENGOLIR"], args: 1, maxArgs: 1 },
+    [Acao.Beber]: { sinonimos: ["BEBER", "TOMAR", "INGERIR", "CONSUMIR"], args: 1, maxArgs: 1 },
+    [Acao.Cheirar]: { sinonimos: ["CHEIRAR", "FAREJAR", "ASPIRAR", "OLFATEAR"], args: 1, maxArgs: 1 },
+    [Acao.Ouvir]: { sinonimos: ["OUVIR", "ESCUTAR"], args: 1, maxArgs: 1 },
+    [Acao.Tocar]: { sinonimos: ["TOCAR", "ESFREGAR", "TATEAR", "SENTIR"], args: 1, maxArgs: 1 },
+    [Acao.Escrever]: { sinonimos: ["ESCREVER", "ANOTAR", "REGISTRAR", "RASCUNHAR", "DESENHAR"], args: 1, maxArgs: 1, texto: true },
+    [Acao.Ler]: { sinonimos: ["LER", "ESTUDAR", "FOLHEAR", "CONSULTAR"], args: 1, maxArgs: 1 },
+
+    [Acao.Jogar]: { sinonimos: ["JOGAR", "ATIRAR", "ARREMESSAR", "DISPARAR", "LANCAR", "PROJETAR"], args: 1, maxArgs: 2 },
+    [Acao.Destrancar]: { sinonimos: ["DESTRANCAR", "DESBLOQUEAR", "DESTRAVAR"], args: 1, maxArgs: 2 },
+    [Acao.Trancar]: { sinonimos: ["TRANCAR", "TRAVAR", "BLOQUEAR"], args: 1, maxArgs: 2 },
+    [Acao.Colocar]: { sinonimos: ["COLOCAR", "POR", "BOTAR", "GUARDAR", "DEPOSITAR", "INSERIR"], args: 2, maxArgs: 2, quantidade: true },
+    [Acao.Virar]: { sinonimos: ["VIRAR", "GIRAR", "REDIRECIONAR", "TORCER", "OPERAR"], args: 1, maxArgs: 1 },
+    [Acao.Amarrar]: { sinonimos: ["AMARRAR", "ATRACAR", "ANEXAR", "ATAR", "PRENDER", "FIXAR", "ENLACAR"], args: 1, maxArgs: 2 },
+    [Acao.Desamarrar]: { sinonimos: ["DESAMARRAR", "DESATRACAR", "DESANEXAR", "DESATAR", "DESPRENDER", "DESAFIXAR"], args: 1, maxArgs: 1 },
+    [Acao.Cortar]: { sinonimos: ["CORTAR", "DECEPAR", "AMPUTAR", "SERRAR"," RASGAR"], args: 1, maxArgs: 2 },
+    [Acao.Quebrar]: { sinonimos: ["QUEBRAR", "DESTRUIR", "ROMPER", "ARREBENTAR", "ESTRAGAR"], args: 1, maxArgs: 2 },
+    [Acao.Atacar]: { sinonimos: ["ATACAR", "BATER", "GOLPEAR", "ATINGIR", "MATAR", "ABATER", "ELIMINAR"], args: 1, maxArgs: 2 },
+    [Acao.Dar]: { sinonimos: ["DAR", "OFERECER", "PRESENTEAR", "OFERTAR", "DOAR", "CEDER", "ENTREGAR", "PASSAR"], args: 2, maxArgs: 2, quantidade: true },
+    [Acao.Falar]: { sinonimos: ["FALAR", "COMUNICAR", "CONVERSAR", "DIALOGAR", "PAPEAR", "DIZER"], args: 0, maxArgs: 0, texto: true },
+    [Acao.Inflar]: { sinonimos: ["INFLAR", "SOPRAR", "ASSOPRAR"], args: 1, maxArgs: 1 },
+    [Acao.Cavar]: { sinonimos: ["CAVAR", "ESCAVAR"], args: 1, maxArgs: 1 },
+    [Acao.Queimar]: { sinonimos: ["QUEIMAR", "INFLAMAR", "FOGO"], args: 1, maxArgs: 2 },
+
+    [Acao.Encher]: { sinonimos: ["ENCHER", "ABASTECER", "REABASTECER"], args: 1, maxArgs: 2 },
+    [Acao.Esvaziar]: { sinonimos: ["ESVAZIAR", "DRENAR", "ESGOTAR"], args: 1, maxArgs: 2 },
+    [Acao.Comprar]: { sinonimos: ["COMPRAR"], args: 1, maxArgs: 2, quantidade: true },
+    [Acao.Vender]: { sinonimos: ["VENDER"], args: 1, maxArgs: 2, quantidade: true },
+
+    [Acao.Oi]: { sinonimos: ["OI", "OLA", "HOLA", "HI", "HELLO", "HEY", "SALVE"], args: 0, maxArgs: 1 },
+    [Acao.Gritar]: { sinonimos: ["GRITAR", "BERRAR", "ESBRAVEJAR"], args: 0, maxArgs: 0 },
+    [Acao.Pular]: { sinonimos: ["PULAR", "SALTAR"], args: 0, maxArgs: 1 },
+    [Acao.Dormir]: { sinonimos: ["DORMIR", "AGUARDAR", "ESPERAR", "PARAR", "PAUSAR"], args: 0, maxArgs: 0 },
+
+    [Acao.Ir]: { sinonimos: ["IR", "ANDAR", "VAI", "ANDE", "CAMINHE", "CAMINHAR", "CORRER"], args: 1, maxArgs: 1 },
+    [Acao.Artigos]: { sinonimos: ["O", "OS", "A", "AS", "UM", "UNS", "UMA", "UMAS"], args: 0, maxArgs: 0 },
+    [Acao.Preposicoes]: { sinonimos: ["ANTE", "APOS", "ATE", "COM", "CONTRA", "DE", "DESDE", "EM", "ENTRE", "PARA", "PERANTE", "SEM", "SOB", "SOBRE", "TRAS"], args: 0, maxArgs: 0 },
+    [Acao.Contracoes]: { sinonimos: ["DO", "NO", "AO", "PELO", "DOS", "NOS", "AOS", "PELOS", "DA", "NA", "PELA", "DAS", "NAS", "PELAS", "DUM", "NUM", "DUNS", "NUNS", "DUMA", "NUMA", "DUMAS", "NUMAS", "PRA", "PRO"], args: 0, maxArgs: 0 },
+    
+    [Acao.Usar]: { sinonimos: ["USAR", "USANDO", "COM", "ATRAVES", "SEGURANDO"], args: 2, maxArgs: 2 }, // <CMD> <#1,#2,#2>* <OBJ> <#1,#2,#2,COM>* <OBJ>
+
+    // Só no frontend
+    [Acao.Chao]: { sinonimos: ["CHAO", "PISO", "TERRA", "SOLO"], args: 0, maxArgs: 0 },
+    [Acao.Ajuda]: { sinonimos: ["?", "AJUDA", "HELP", "SOCORRO"], args: 0, maxArgs: 0 },
+    [Acao.Logout]: { sinonimos: ["LOGOUT", "EXIT", "QUIT", "ABANDONAR", "DESLOGAR", "TERMINAR", "ENCERRAR"], args: 0, maxArgs: 0 },
+    [Acao.Cores]: { sinonimos: ["CORES"], args: 0, maxArgs: 0 },
+    [Acao.Chat]: { sinonimos: ["CHAT"], args: 0, maxArgs: 0 },
+
+    // Utilização interna
+    [Acao.$AcaoAntes]: { sinonimos: [], args: -1, maxArgs: -1 },
+    [Acao.$Descricao]: { sinonimos: [], args: -1, maxArgs: -1 },
+};
+
+export const DIRECOES: string[] = [Acao.N, Acao.S, Acao.L, Acao.O, Acao.NE, Acao.NO, Acao.SE, Acao.SO, Acao.Subir, Acao.Descer, Acao.Entrar, Acao.Sair];
