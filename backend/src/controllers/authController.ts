@@ -3,8 +3,9 @@ import { apiDocPaths } from "../docs/head.ts";
 import { UserRepository } from "../repositories/userRepository.ts";
 import { db } from "../db/drizzle.ts";
 import bcrypt from "bcryptjs";
-import { RevokeSessionError } from "../middlewares/authMiddleware.ts";
+import { ACCESS_TOKEN_SECRET, JWT_ACCESS_TOKEN_EXPIRATION, RevokeSessionError } from "../middlewares/authMiddleware.ts";
 import type { User } from "../db/userSchema.ts";
+import { signJWTToken } from "../utils/jwt.ts";
 
 // Autenticação simples usando nome de usuário e senha
 export class AuthController {
@@ -32,9 +33,15 @@ export class AuthController {
         session.username = user.username;
         req.session = session;
 
+        // Cria o token JWT
+        const token = await signJWTToken({ username: user.username }, ACCESS_TOKEN_SECRET, {
+            expiresIn: JWT_ACCESS_TOKEN_EXPIRATION
+        });
+
         res.status(201).json({ 
             username: user.username,
-            createdAt: user.createdAt
+            createdAt: user.createdAt,
+            token: token
         });
     }
 
@@ -56,9 +63,15 @@ export class AuthController {
         session.username = user.username;
         req.session = session;
 
+        // Cria o token JWT
+        const token = await signJWTToken({ username: user.username }, ACCESS_TOKEN_SECRET, {
+            expiresIn: JWT_ACCESS_TOKEN_EXPIRATION
+        });
+
         res.status(200).json({
             username: user.username,
-            createdAt: user.createdAt
+            createdAt: user.createdAt,
+            token: token
         });
     }
 

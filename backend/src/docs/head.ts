@@ -39,6 +39,19 @@ const generateOpenAPIDocs = (registry: OpenAPIRegistry) => {
                 email: "erick.weil@ifro.edu.br",
             },
         },
+        // jwt
+        security: [
+            {bearerAuth: []}
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: "http",
+                    scheme: "bearer",
+                    bearerFormat: "JWT"
+                }
+            },
+        },
         servers: [
             {
                 url: process.env.DOCS_API_URL || "Necessário configurar URL",

@@ -55,6 +55,9 @@ export const authUserSchema = z.object({
     createdAt: z.iso.datetime().meta({
         example: "2023-10-05T14:48:00.000Z",
     }),
+    token: z.string().meta({
+        example: "JWT_TOKEN",
+    }),
 });
 
 export const acaoExtraSchema = z.object({
