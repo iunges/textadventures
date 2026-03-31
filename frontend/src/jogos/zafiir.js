@@ -1,255 +1,268 @@
-//const prompt = require("prompt-sync")();
-import { console, prompt, process, rl } from "../mockConsole";
+import { console, prompt } from "../mockConsole";
 
+// troca de function para classe
+export class JogoZafiir {
+    constructor() {
+        // variaveis agora sao propriedades da classe
+        this.localizacaoAtual = "Sede";
+        this.inventario = [];
+        this.jogoAtivo = true;
+        this.vidaJogador = 100;
+        this.vidaZafiir = 120;
+
+        this.objetos = [
+            { nome: "Risty", descricao: "Cartão com o logo 'R.I.S.T.Y.'", posicao: "EquipamentosRisty" },
+            { nome: "Zafiir", descricao: "Cartão com o logo 'Za'fiir'", posicao: "Dormitório" },
+        ];
+
+        // mapa usa funcao de seta pra verificar o inventario com this.
+        this.mapa = {
+            Sede: {
+                descricao: () => `A luz fria de um monitor solitário te arranca da inconsciência.
+                Você está deitado no chão de um ambiente estéril, que vibra com o zumbido baixo de máquinas.
+                Painéis de metal e equipamentos de alta tecnologia não deixam dúvida: isto é um laboratório...
+                e parece ser secreto. Muito secreto.`,
+                conexoes: () => ({ L: () => "Refeitório", O: () => "Dormitório", N: () => "ExperimentosRisty", S: () => "ProjetoZaFiir" }),
+            },
+            Refeitório: {
+                descricao: () => `O cenário é de puro caos. Mesas e cadeiras viradas, comida espalhada e pratos quebrados cobrem o chão.`,
+                conexoes: () => ({ O: () => "Sede" }),
+            },
+            Dormitório: {
+                descricao: () => `A desordem aqui é pessoal. Em meio à bagunça, sobre uma pequena escrivaninha, algo chama sua atenção: um cartão de acesso com o logo 'Zafiir'.`,
+                conexoes: () => ({ L: () => "Sede" }),
+            },
+            ExperimentosRisty: {
+                descricao: () => `As portas automáticas se abrem com um chiado. O ar tem um cheiro químico e antisséptico.`,
+                conexoes: () => ({ L: () => "TanqueXLH2", O: () => "EquipamentosRisty", N: () => "CasulosLH3", S: () => "Sede" }),
+            },
+            TanqueXLH2: {
+                descricao: () => `A sala é dominada por enormes tanques de vidro cheios de um líquido âmbar borbulhante.`,
+                conexoes: () => ({ O: () => "ExperimentosRisty" }),
+            },
+            EquipamentosRisty: {
+                descricao: () => `Esta sala é um arsenal. Ao fundo você encontra um cartão com o logo 'Risty'.`,
+                conexoes: () => ({ L: () => "ExperimentosRisty", N: () => "CasulosLH3" }),
+            },
+            CasulosLH3: {
+                descricao: () => `Incubadoras orgânicas emitem bipes lentos. À sua direita (Leste), há uma porta trancada.`,
+                conexoes: () => ({
+                    // verificar item agora usa this.inventario
+                    // Operador ternario(mini if else)
+                    L: () => this.inventario.includes("Risty") 
+                        ? "CentroDePesquisa" 
+                        : (console.log("\n>> A porta exige o cartão 'Risty'."), null),
+                    O: () => "EquipamentosRisty",
+                    S: () => "ExperimentosRisty",
+                }),
+            },
+            CentroDePesquisa: {
+                descricao: () => `Dezenas de monitores piscam. Você percebe uma corrente de ar vindo de trás de um rack de servidores.`,
+                conexoes: () => ({ O: () => "CasulosLH3", N: () => "PassagemSecreta" }),
+            },
+            PassagemSecreta: {
+                descricao: () => `A passagem leva a um beco sem saída com um teclado numérico. Ao lado está escrito: S1426.`,
+                conexoes: () => ({
+                    O: () => "CentroDePesquisa",
+                    S1426: () => {
+                        console.log("\n>> Você digita o código 'S1426'. A porta desliza.");
+                        return "CriaturaZaFiir";
+                    },
+                }),
+            },
+            ProjetoZaFiir: {
+                descricao: () => `O epicentro da pesquisa. Um grande cilindro de vidro estilhaçado sugere que o 'projeto' fugiu.`,
+                conexoes: () => ({ L: () => "Depósito", O: () => "NúcleoDeExperimentos", N: () => "Sede" }),
+            },
+            Depósito: {
+                descricao: () => `Poeira e ozônio. Prateleiras de metal se estendem até o teto.`,
+                conexoes: () => ({ O: () => "ProjetoZaFiir" }),
+            },
+            NúcleoDeExperimentos: {
+                descricao: () => `O ar aqui é gelado. Cabos grossos correm pelo chão até um terminal vermelho.`,
+                conexoes: () => ({ L: () => "ProjetoZaFiir", S: () => "ProjetoSecreto" }),
+            },
+            ProjetoSecreto: {
+                descricao: () => `Uma área limpa e restrita. Uma porta de aço reforçada ao norte bloqueia o caminho.`,
+                conexoes: () => ({
+                    // Operador ternario(mini if else)
+                    N: () => this.inventario.includes("Zafiir") 
+                        ? "CriaturaZaFiir" 
+                        : (console.log("\n>> A porta exige o cartão 'Zafiir'."), null),
+                    S: () => "NúcleoDeExperimentos",
+                }),
+            },
+            CriaturaZaFiir: {
+                descricao: () => `Ao abrir a porta, um som gutural congela seu sangue. A criatura 'Za'fiir' te observa!`,
+                conexoes: () => ({}),
+            },
+        };
+    }
+
+    // Função auxiliar para o efeito de suspense do Easter Egg
+    async esperar(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // O loop principal agora e metodo da classe
+    async iniciar() {
+        console.log("----------------------------------------------------");
+        console.log(this.mapa[this.localizacaoAtual].descricao());
+
+        while (this.jogoAtivo) {
+            // operador ternario
+            this.localizacaoAtual === "CriaturaZaFiir" 
+                ? (await this.iniciarDuelo(), this.jogoAtivo = false) 
+                : await this.processarTurno();
+        }
+    }
+
+    // nova leitura de imput
+    async processarTurno() {
+        this.exibirOpcoes();
+        const comando = await prompt("\n> ");
+        const comandoLimpo = comando.toLowerCase().trim();
+        const [acao, ...args] = comandoLimpo.split(" ");
+        const alvo = args.join(" ");
+
+        // Easter Egg: Instakill com suspense
+        if (comandoLimpo === "pensa em acidente de moto") {
+            console.log("\n[!] O TEMPO PARECE PARAR...");
+            await this.esperar(1000);
+            console.log(">> Você sussurra: 'Pensa em acidente de moto...'");
+            await this.esperar(1500);
+            console.log(">> Za'fiir paralisa... o cérebro dele entra em curto-circuito.");
+            await this.esperar(1200);
+            console.log(">> A criatura engasga com o próprio pensamento e desmorona.");
+            console.log("\n=========================================");
+            console.log("   VITÓRIA: ZA'FIIR MORREU ENGASGADO!   ");
+            console.log("=========================================\n");
+            this.vidaZafiir = 0;
+            this.jogoAtivo = false;
+            return;
+        }
+
+        // Uso de switch case no lugar de if else
+        switch (acao) {
+            case "pegar":
+                this.tentarPegarItem(alvo);
+                break;
+            case "inventario":
+            case "inv":
+                this.exibirInventario();
+                break;
+            case "n": case "s": case "l": case "o":
+                this.mover(acao.toUpperCase());
+                break;
+            default:
+                //tuUpperCase
+                this.mover(comando.toUpperCase());
+        }
+    }
+
+    // listagem de comandos disponiveis
+    exibirOpcoes() {
+        console.log("\n--- Comandos ---");
+        const itensAqui = this.objetos.filter(obj => obj.posicao === this.localizacaoAtual);
+        itensAqui.forEach(item => console.log(`- pegar ${item.nome.toLowerCase()}`));
+
+        const conexoes = this.mapa[this.localizacaoAtual].conexoes();
+        for (const dir in conexoes) {
+            if (dir.length === 1) console.log(`- ir para ${dir}`);
+        }
+        console.log("- inventario");
+    }
+
+    // logica de movimento
+    mover(direcaoOuCodigo) {
+        const conexoes = this.mapa[this.localizacaoAtual].conexoes();
+        const destinoFunc = conexoes[direcaoOuCodigo];
+
+        // operador ternario(mini if else)
+        destinoFunc 
+            ? (() => { 
+                const proximo = destinoFunc(); 
+                proximo ? (this.localizacaoAtual = proximo, console.log("\n" + "=".repeat(50)), console.log(this.mapa[this.localizacaoAtual].descricao())) : null 
+              })()
+            : console.log("\n>> Você não pode ir por aí ou o código está errado.");
+    }
+
+    // logica de inventario
+    tentarPegarItem(nomeItem) {
+        const item = this.objetos.find(obj => obj.posicao === this.localizacaoAtual && obj.nome.toLowerCase() === nomeItem);
+        // operador ternario(mini if else)
+        item 
+            ? (item.posicao = "inventario", this.inventario.push(item.nome), console.log(`\n>> Você pegou: ${item.nome}.`))
+            : console.log("\n>> Não há esse item aqui.");
+    }
+
+    // metodo pra exibir o inventario
+    exibirInventario() {
+        console.log("\n--- Seu Inventário ---");
+        // operador ternario(mini if else)
+        this.inventario.length === 0 
+            ? console.log("Vazio.") 
+            : this.inventario.forEach(i => console.log(`- ${i}`));
+    }
+
+    // metodo de duelo e troca pra switch case no lugar de if else
+    async iniciarDuelo() {
+        if (this.vidaZafiir <= 0) return;
+
+        console.log("\n!!! COMBATE INICIADO !!!");
+        
+        while (this.vidaJogador > 0 && this.vidaZafiir > 0) {
+            console.log(`\nSua Vida: ${this.vidaJogador} | Vida Za'fiir: ${this.vidaZafiir}`);
+            const entrada = await prompt("Ação [atacar, defender, esquivar]: ");
+            const acao = entrada.toLowerCase().trim();
+
+            // Easter egg direto no combate
+            if (acao === "pensa em acidente de moto") {
+                console.log("\n>> Você sussurra a frase proibida...");
+                await this.esperar(1000);
+                console.log(">> Za'fiir entra em choque anafilático mental e morre engasgado.");
+                this.vidaZafiir = 0;
+                break;
+            }
+
+            const acaoBoss = Math.random() > 0.5 ? "atacar" : "defender";
+            const dano = Math.floor(Math.random() * 15) + 10;
+            console.log("----------------------------------------");
+            
+            switch (acao) {
+                case "atacar":
+                    acaoBoss === "atacar" 
+                        ? (console.log(">> Ambos atacam!"), this.vidaJogador -= dano, this.vidaZafiir -= dano)
+                        : console.log(">> Você ataca, mas Za'fiir se defende!");
+                    break;
+                case "defender":
+                    acaoBoss === "atacar"
+                        ? (console.log(">> Você se defendeu do golpe!"), this.vidaJogador -= Math.floor(dano / 2))
+                        : console.log(">> Ambos em postura defensiva.");
+                    break;
+                case "esquivar":
+                    acaoBoss === "atacar"
+                        ? (Math.random() > 0.4 
+                            ? (console.log(">> Esquiva e contra-ataque!"), this.vidaZafiir -= (dano + 5))
+                            : (console.log(">> Falha na esquiva!"), this.vidaJogador -= (dano + 10)))
+                        : console.log(">> Você esquiva, mas ele não atacou.");
+                    break;
+                default:
+                    console.log(">> Você hesitou e Za'fiir te golpeou!");
+                    this.vidaJogador -= dano;
+            }
+        }
+
+        this.vidaJogador > 0 
+            ? console.log("\nVITÓRIA! A criatura jaz imóvel no chão.") 
+            : console.log("\nDERROTA... A escuridão te consome.");
+        
+        this.jogoAtivo = false;
+    }
+}
+
+//funcao pro jogo ainda rodar(function)
 export async function zafiir() {
-
-const objetos = [
-    { nome: "Risty", descricao: "Cartão com o logo 'R.I.S.T.Y.'", posicao: "EquipamentosRisty" },
-    { nome: "Zaafiir", descricao: "Cartão com o logo 'Za'fiir'", posicao: "Dormitório" },
-];
-
-let localizacaoAtual = "Sede";
-let inventario = [];
-let jogoAtivo = true;
-
-let vidaJogador = 100;
-let vidaZaafiir = 120;
-
-const mapa = {
-    Sede: {
-        descricao: () => `A luz fria de um monitor solitário te arranca da inconsciência.
-        Você está deitado no chão de um ambiente estéril, que vibra com o zumbido baixo de máquinas.
-        Painéis de metal e equipamentos de alta tecnologia não deixam dúvida: isto é um laboratório...
-        e parece ser secreto. Muito secreto.`,
-        conexoes: () => ({ L: () => "Refeitório", O: () => "Dormitório", N: () => "ExperimentosRisty", S: () => "ProjetoZaFiir" }),
-    },
-    Refeitório: {
-        descricao: () => `O cenário é de puro caos. Mesas e cadeiras viradas, comida espalhada e pratos quebrados cobrem o chão. Uma luz de emergência pisca sem parar, revelando e escondendo manchas escuras e secas no piso.`,
-        conexoes: () => ({ O: () => "Sede" }),
-    },
-    Dormitório: {
-        descricao: () => `A desordem aqui é pessoal. Beliches de metal estão desalinhadas e armários foram abertos à força. Em meio à bagunça, sobre uma pequena escrivaninha, algo chama sua atenção: um cartão de acesso com o logo 'Zaafiir'.`,
-        conexoes: () => ({ L: () => "Sede" }),
-    },
-    ExperimentosRisty: {
-        descricao: () => `As portas automáticas se abrem com um chiado, liberando uma névoa fria. O ar tem um cheiro químico e antisséptico. Ao fundo, iluminado por uma luz azulada, um letreiro na parede se torna visível: 'SETOR DE EXPERIMENTOS R.I.S.T.Y.'`,
-        conexoes: () => ({ L: () => "TanqueXLH2", O: () => "EquipamentosRisty", N: () => "CasulosLH3", S: () => "Sede" }),
-    },
-    TanqueXLH2: {
-        descricao: () => `A sala é dominada por enormes tanques de vidro, do chão ao teto, cheios de um líquido âmbar borbulhante. Dentro de cada um, uma silhueta humanoide flutua imóvel.`,
-        conexoes: () => ({ O: () => "ExperimentosRisty" }),
-    },
-    EquipamentosRisty: {
-        descricao: () => `Esta sala é um arsenal. Em racks na parede, você vê rifles de dardos e armaduras de combate arranhadas. Ao fundo você encontra um cartão com o logo 'Risty'.`,
-        conexoes: () => ({ L: () => "ExperimentosRisty", N: () => "CasulosLH3" }),
-    },
-    CasulosLH3: {
-        descricao: () => `Incubadoras orgânicas emitem bipes lentos e constantes, mas um dos casulos está violado, rasgado de dentro para fora. À sua direita (Leste), você nota uma porta de segurança, trancada com um leitor de cartão.`,
-        conexoes: () => ({
-            L: () => {
-                if (inventario.includes("Risty")) {
-                    console.log("\n>> Você passa o cartão 'Risty'. A porta para o Centro de Pesquisa destranca.");
-                    return "CentroDePesquisa";
-                }
-                console.log("\n>> A porta está trancada. O leitor de cartões pisca, aguardando um cartão de acesso.");
-                return null;
-            },
-            O: () => "EquipamentosRisty",
-            S: () => "ExperimentosRisty",
-        }),
-    },
-    CentroDePesquisa: {
-        descricao: () => `O cérebro da operação. Dezenas de monitores piscam com gráficos e plantas do complexo. Você percebe uma corrente de ar vindo de trás de um rack de servidores.`,
-        conexoes: () => ({ O: () => "CasulosLH3", N: () => "PassagemSecreta" }),
-    },
-    PassagemSecreta: {
-        descricao: () => `A passagem leva a um beco sem saída, bloqueado por uma porta de metal com um teclado numérico. Ao lado, arranhado no metal, você vê: S1426.`,
-        conexoes: () => ({
-            O: () => "CentroDePesquisa",
-            S1426: () => {
-                console.log("\n>> Você digita o código 'S1426'. A porta de metal desliza para o lado.");
-                return "CriaturaZaFiir";
-            },
-        }),
-    },
-    ProjetoZaFiir: {
-        descricao: () => `O epicentro da pesquisa. Mapas genéticos e relatórios de contenção falhos sobre 'Za'fiir' cobrem as superfícies. Um grande cilindro de vidro estilhaçado no centro da sala sugere que o 'projeto' não está mais aqui.`,
-        conexoes: () => ({ L: () => "Depósito", O: () => "NúcleoDeExperimentos", N: () => "Sede" }),
-    },
-    Depósito: {
-        descricao: () => `Poeira e ozônio. Prateleiras de metal se estendem até o teto, repletas de caixas e equipamentos antigos. Uma única lâmpada pisca, lançando sombras dançantes.`,
-        conexoes: () => ({ O: () => "ProjetoZaFiir" }),
-    },
-    NúcleoDeExperimentos: {
-        descricao: () => `O ar aqui é gelado. Cabos grossos correm pelo chão, convergindo para um terminal central que pisca com um alerta vermelho: 'PROJETO ZA'FIIR'.`,
-        conexoes: () => ({ L: () => "ProjetoZaFiir", S: () => "ProjetoSecreto" }),
-    },
-    ProjetoSecreto: {
-        descricao: () => `Uma área limpa e restrita. Uma porta de aço reforçada ao norte bloqueia o caminho. Ao lado, um leitor de cartão exige um cartão com o logo 'Zaafiir'. Um som rítmico, como uma respiração, pode ser ouvido do outro lado.`,
-        conexoes: () => ({
-            N: () => {
-                if (inventario.includes("Zaafiir")) {
-                    console.log("\n>> Você insere o cartão 'Zaafiir'. As travas pesadas da porta de aço se retraem.");
-                    return "CriaturaZaFiir";
-                }
-                console.log("\n>> A porta está trancada. O leitor de cartões pisca, aguardando um cartão de acesso.");
-                return null;
-            },
-            S: () => "NúcleoDeExperimentos",
-        }),
-    },
-    CriaturaZaFiir: {
-        descricao: () => `Ao abrir a porta, um som gutural congela seu sangue.
-        Ali, no canto da sala, aninhada entre cabos partidos, está a criatura 'Za'fiir'. 
-        É maior do que você imaginava, com uma pele que parece absorver a luz. 
-        Ela te observa com uma inteligência fria e se prepara para o combate!`,
-        conexoes: () => ({}),
-    },
-};
-
-async function iniciarDuelo() {
-    console.log(mapa.CriaturaZaFiir.descricao());
-    
-    while (vidaJogador > 0 && vidaZaafiir > 0) {
-        console.log("\n========================================");
-        console.log(`SUA VIDA: ${vidaJogador} HP`);
-        console.log(`VIDA DE ZA'FIIR: ${vidaZaafiir} HP`);
-        console.log("----------------------------------------");
-        console.log("Escolha sua ação: [atacar], [defender], [esquivar]");
-        
-        let acaoJogador = "";
-        while (!["atacar", "defender", "esquivar"].includes(acaoJogador)) {
-            acaoJogador = (await prompt("> ")).toLowerCase();
-            if (!["atacar", "defender", "esquivar"].includes(acaoJogador)) {
-                console.log("Comando inválido. Escolha [atacar], [defender] ou [esquivar].");
-            }
-        }
-        
-        const acoesMonstro = ["atacar", "defender"];
-        const acaoMonstro = acoesMonstro[Math.floor(Math.random() * acoesMonstro.length)];
-        
-        const danoBase = Math.floor(Math.random() * 11) + 10;
-
-        console.log("----------------------------------------");
-
-        if (acaoJogador === "atacar") {
-            if (acaoMonstro === "atacar") {
-                console.log(">> Ambos atacam ao mesmo tempo!");
-                console.log(`>> Você recebe ${danoBase} de dano.`);
-                console.log(`>> Za'fiir recebe ${danoBase} de dano.`);
-                vidaJogador -= danoBase;
-                vidaZaafiir -= danoBase;
-            } else {
-                console.log(">> Você ataca, mas Za'fiir se defende. Ninguém se fere.");
-            }
-        } else if (acaoJogador === "defender") {
-            if (acaoMonstro === "atacar") {
-                console.log(">> Za'fiir ataca, mas você se defende. Ninguém se fere.");
-            } else {
-                console.log(">> Você mantem uma postura defensiva, mas Za'fiir aproveita uma brecha e te ataca!");
-                console.log(`>> Você recebe ${danoBase} de dano.`);
-                vidaJogador -= danoBase;
-            }
-        } else if (acaoJogador === "esquivar") {
-            if (acaoMonstro === "atacar") {
-                const chancePrevisao = Math.random(); 
-
-                if (chancePrevisao < 0.3) {
-                    const danoPrevisto = danoBase + 5;
-                    console.log(">> VOCÊ TENTA SE ESQUIVAR, MAS ZA'FIIR PREVÊ SEU MOVIMENTO!");
-                    console.log(`>> O ataque te acerta em cheio, causando ${danoPrevisto} de dano crítico!`);
-                    vidaJogador -= danoPrevisto;
-                } else {
-                    const danoEsquiva = danoBase + 5;
-                    console.log(">> Você se esquiva do ataque de Za'fiir e contra-ataca com precisão!");
-                    console.log(`>> Za'fiir recebe ${danoEsquiva} de dano.`);
-                    vidaZaafiir -= danoEsquiva;
-                }
-            } else {
-                console.log(">> Você se prepara para esquivar, mas Za'fiir não ataca. Nada acontece.");
-            }
-        }
-    }
-    
-    console.log("\n================ FIM DE JOGO ================");
-    if (vidaJogador <= 0) {
-        console.log("Você não resistiu aos ferimentos. A escuridão te consome...");
-        console.log("A criatura Za'fiir está livre.");
-    } else {
-        console.log("Com um último golpe, a criatura monstruosa cai sem vida no chão.");
-        console.log("Você conseguiu. Você sobreviveu... por enquanto.");
-    }
-    
-    jogoAtivo = false;
-}
-
-console.log(mapa[localizacaoAtual].descricao());
-
-while (jogoAtivo) {
-    if (localizacaoAtual === "CriaturaZaFiir") {
-        await iniciarDuelo();
-        continue;
-    }
-
-    console.log();
-    console.log("Comandos disponíveis:");
-
-    const itensNaSala = objetos.filter(obj => obj.posicao === localizacaoAtual);
-    itensNaSala.forEach(item => {
-        console.log(`- pegar ${item.nome.toLowerCase()}`);
-    });
-
-    const conexoesDaSala = mapa[localizacaoAtual].conexoes();
-    for (const direcao in conexoesDaSala) {
-        if (direcao.length > 1) continue;
-        console.log(`- ${direcao.toLowerCase()}`);
-    }
-    console.log("- inventario");
-
-    const comando = await prompt("> ");
-    const [acao, ...argumentos] = comando.toLowerCase().split(" ");
-    const argumento = argumentos.join(" ");
-
-    if (acao === "pegar") {
-        const itemParaPegar = itensNaSala.find(item => item.nome.toLowerCase() === argumento);
-        if (itemParaPegar) {
-            itemParaPegar.posicao = "inventario";
-            inventario.push(itemParaPegar.nome);
-            console.log(`\n>> Você pegou: ${itemParaPegar.nome}.`);
-            
-            const descricaoAtualDaSala = mapa[localizacaoAtual].descricao();
-            const sala = mapa[localizacaoAtual];
-            
-            sala.descricao = () => descricaoAtualDaSala
-                .replace(` Em meio à bagunça, sobre uma pequena escrivaninha, algo chama sua atenção: um cartão de acesso com o logo '${itemParaPegar.nome}'.`, "")
-                .replace(` Ao fundo você encontra um cartão com o logo '${itemParaPegar.nome}'.`, "");
-        } else {
-            console.log("Não há nada com esse nome para pegar aqui.");
-        }
-    } else if (acao === "inventario" || acao === "inv") {
-        console.log("\nNo seu inventário você tem:");
-        if (inventario.length > 0) {
-            inventario.forEach(item => console.log(`- ${item}`));
-        } else {
-            console.log("Nada.");
-        }
-    } else {
-        const direcaoOuAcao = comando.toUpperCase();
-        const funcaoDestino = conexoesDaSala[direcaoOuAcao];
-
-        if (funcaoDestino) {
-            const proximaSala = funcaoDestino();
-            if (proximaSala) {
-                localizacaoAtual = proximaSala;
-                console.log("----------------------------------------------------");
-                if (localizacaoAtual !== "CriaturaZaFiir") {
-                    console.log(mapa[localizacaoAtual].descricao());
-                }
-            }
-        } else {
-            console.log("Comando inválido ou caminho inexistente.");
-        }
-    }
-}
-
+    const jogo = new JogoZafiir();
+    await jogo.iniciar();
 }
